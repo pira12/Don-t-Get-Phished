@@ -1,0 +1,236 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens.
+ * Theme (gmail | outlook) is set via [data-theme] and mode (light | dark) via
+ * [data-mode] on <html>. Everything below is a role token so the whole client
+ * restyles live without touching component code.
+ */
+
+:root,
+[data-theme="gmail"] {
+  --font-client: "Google Sans", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --radius: 16px;
+
+  --canvas: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f6f8fc;
+  --rail: #f6f8fc;
+  --border: #e3e6eb;
+  --ink: #202124;
+  --ink-muted: #5f6368;
+  --ink-faint: #80868b;
+  --accent: #1a73e8;
+  --accent-soft: #e8f0fe;
+  --accent-ink: #ffffff;
+  --danger: #d93025;
+  --danger-soft: #fce8e6;
+  --success: #188038;
+  --success-soft: #e6f4ea;
+  --warning: #e37400;
+  --warning-soft: #fef7e0;
+  --selected: #c2e7ff;
+  --row-hover: #f5f5f5;
+}
+
+[data-theme="outlook"] {
+  --font-client: "Segoe UI", "Segoe UI Web", "Helvetica Neue", Arial, sans-serif;
+  --radius: 6px;
+
+  --canvas: #faf9f8;
+  --surface: #ffffff;
+  --surface-2: #f3f2f1;
+  --rail: #f3f2f1;
+  --border: #edebe9;
+  --ink: #201f1e;
+  --ink-muted: #605e5c;
+  --ink-faint: #8a8886;
+  --accent: #0f6cbd;
+  --accent-soft: #eff6fc;
+  --accent-ink: #ffffff;
+  --danger: #c50f1f;
+  --danger-soft: #fdf3f4;
+  --success: #107c10;
+  --success-soft: #f1faf1;
+  --warning: #b56e00;
+  --warning-soft: #fff8f0;
+  --selected: #cfe4fa;
+  --row-hover: #f3f2f1;
+}
+
+[data-mode="dark"][data-theme="gmail"],
+[data-theme="gmail"][data-mode="dark"] {
+  --canvas: #202124;
+  --surface: #202124;
+  --surface-2: #2a2b2d;
+  --rail: #202124;
+  --border: #3c4043;
+  --ink: #e8eaed;
+  --ink-muted: #9aa0a6;
+  --ink-faint: #80868b;
+  --accent: #8ab4f8;
+  --accent-soft: #1f3348;
+  --accent-ink: #202124;
+  --danger: #f28b82;
+  --danger-soft: #3a2321;
+  --success: #81c995;
+  --success-soft: #1f2e22;
+  --warning: #fdd663;
+  --warning-soft: #3a3220;
+  --selected: #2a3f5a;
+  --row-hover: #2a2b2d;
+}
+
+[data-mode="dark"][data-theme="outlook"] {
+  --canvas: #1b1a19;
+  --surface: #252423;
+  --surface-2: #201f1e;
+  --rail: #201f1e;
+  --border: #3b3a39;
+  --ink: #f3f2f1;
+  --ink-muted: #c8c6c4;
+  --ink-faint: #a19f9d;
+  --accent: #4f9cf9;
+  --accent-soft: #1f3348;
+  --accent-ink: #1b1a19;
+  --danger: #f1707b;
+  --danger-soft: #3a2321;
+  --success: #92c353;
+  --success-soft: #1f2e22;
+  --warning: #fdd663;
+  --warning-soft: #3a3220;
+  --selected: #2a3f5a;
+  --row-hover: #2d2c2b;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-client);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Visible, accessible focus for full keyboard play. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Thin, native-feeling scrollbars. */
+.thin-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+  border: 3px solid var(--surface);
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Transient highlight used when jumping to a red-flag anchor in the body. */
+.evidence-flash {
+  animation: evidenceFlash 1.8s ease-out;
+  border-radius: 4px;
+}
+@keyframes evidenceFlash {
+  0%,
+  20% {
+    background: var(--warning-soft);
+    box-shadow: 0 0 0 4px var(--warning-soft);
+  }
+  100% {
+    background: transparent;
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+/* Email body typography — kept close to how real clients render HTML mail. */
+.email-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.email-body p {
+  margin: 0 0 14px;
+}
+.email-body h1,
+.email-body h2,
+.email-body h3 {
+  color: var(--ink);
+  line-height: 1.3;
+  margin: 0 0 12px;
+}
+.email-body h1 {
+  font-size: 20px;
+}
+.email-body h2 {
+  font-size: 17px;
+}
+.email-body ul,
+.email-body ol {
+  margin: 0 0 14px;
+  padding-left: 22px;
+}
+.email-body li {
+  margin-bottom: 6px;
+}
+.email-body a {
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+.email-body a:hover {
+  text-decoration: underline;
+}
+.email-body hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 18px 0;
+}
+.email-body .btn {
+  display: inline-block;
+  padding: 11px 22px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-ink) !important;
+  font-weight: 600;
+  text-decoration: none !important;
+  margin: 4px 0 12px;
+}
+.email-body .muted {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.email-body img.signature {
+  max-height: 48px;
+}
