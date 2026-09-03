@@ -8,8 +8,9 @@ import { api, type AdminOverviewResponse } from "@/net/api";
 import { TECHNIQUE_LABELS, type RedFlagType } from "@/game/types";
 import { ContentAdmin } from "./ContentAdmin";
 import { AssignmentsAdmin } from "./AssignmentsAdmin";
+import { ReportsAdmin } from "./ReportsAdmin";
 
-type Tab = "overview" | "content" | "assignments";
+type Tab = "overview" | "content" | "assignments" | "reports";
 
 export function AdminView() {
   const session = useSession();
@@ -74,7 +75,7 @@ export function AdminView() {
 
       {/* Tabs */}
       <div className="mb-5 flex gap-2">
-        {(["overview", "content", "assignments"] as Tab[]).map((t) => (
+        {(["overview", "content", "assignments", "reports"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -92,6 +93,7 @@ export function AdminView() {
 
       {tab === "content" && orgId && <ContentAdmin orgId={orgId} />}
       {tab === "assignments" && orgId && <AssignmentsAdmin orgId={orgId} />}
+      {tab === "reports" && orgId && <ReportsAdmin orgId={orgId} />}
 
       {tab === "overview" && data && (
         <>

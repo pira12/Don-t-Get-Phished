@@ -63,7 +63,17 @@ export const api = {
     call<{ assignment: AdminAssignment }>("/admin/assignments", { method: "POST", body: JSON.stringify({ ...(a as object), orgId }) }),
   deleteAssignment: (id: string) => call<{ ok: boolean }>(`/admin/assignments/${id}`, { method: "DELETE" }),
   myAssignments: (orgId: string) => call<{ assignments: MyAssignment[] }>(`/assignments?orgId=${orgId}`),
+
+  // compliance reports
+  reportCsvUrl: (orgId: string, type: ReportType) => `/api/admin/report?orgId=${orgId}&type=${type}&format=csv`,
+  reportJson: (orgId: string, type: ReportType) =>
+    call<{ org: { name: string }; type: string; generatedAt: string; table: ReportTable }>(
+      `/admin/report?orgId=${orgId}&type=${type}&format=json`,
+    ),
 };
+
+export type ReportType = "members" | "assignments" | "techniques" | "audit";
+export type ReportTable = { headers: string[]; rows: (string | number)[][] };
 
 /** ServerEmail as returned to the client — the GameEmail shape plus meta. */
 export type ServerEmailDto = {
