@@ -10,6 +10,7 @@
 import type {
   Assignment,
   AuditEntry,
+  DuelRating,
   MagicToken,
   Membership,
   Org,
@@ -62,6 +63,10 @@ export interface Repository {
   getAssignment(id: string): Promise<Assignment | null>;
   listAssignments(orgId: string): Promise<Assignment[]>;
   deleteAssignment(id: string): Promise<void>;
+
+  // online-duel ratings (Elo)
+  getDuelRating(userId: string): Promise<DuelRating | null>;
+  putDuelRating(r: DuelRating): Promise<void>;
 
   // audit
   addAudit(a: AuditEntry): Promise<void>;

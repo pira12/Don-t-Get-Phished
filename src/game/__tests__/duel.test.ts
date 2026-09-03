@@ -7,6 +7,8 @@ import {
   duelPointsFor,
   duelOutcome,
   newChallenge,
+  eloExpected,
+  eloDelta,
   DUEL_WRONG_PENALTY,
 } from "../duel";
 import { EMAILS } from "@/data/emails";
@@ -73,5 +75,24 @@ describe("duel scoring", () => {
     expect(duelOutcome(200, 100)).toBe("win");
     expect(duelOutcome(100, 200)).toBe("loss");
     expect(duelOutcome(150, 150)).toBe("draw");
+  });
+});
+
+describe("Elo", () => {
+  it("expected score is 0.5 for equal ratings and >0.5 when higher", () => {
+    expect(eloExpected(1000, 1000)).toBeCloseTo(0.5);
+    expect(eloExpected(1200, 1000)).toBeGreaterThan(0.5);
+  });
+
+  it("winner gains what the loser loses for equal ratings (K/2)", () => {
+    const win = eloDelta(1000, 1000, 1);
+    const loss = eloDelta(1000, 1000, 0);
+    expect(win).toBe(12);
+    expect(loss).toBe(-12);
+    expect(win + loss).toBe(0);
+  });
+
+  it("beating a higher-rated player gains more than beating a lower-rated one", () => {
+    expect(eloDelta(1000, 1400, 1)).toBeGreaterThan(eloDelta(1000, 600, 1));
   });
 });

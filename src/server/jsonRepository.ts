@@ -11,6 +11,7 @@ import type { Repository } from "./repository";
 import type {
   Assignment,
   AuditEntry,
+  DuelRating,
   MagicToken,
   Membership,
   Org,
@@ -29,6 +30,7 @@ type DB = {
   memberships: Membership[];
   emails: Record<string, ServerEmail>;
   assignments: Assignment[];
+  duelRatings: Record<string, DuelRating>;
   audit: AuditEntry[];
 };
 
@@ -41,6 +43,7 @@ const EMPTY: DB = {
   memberships: [],
   emails: {},
   assignments: [],
+  duelRatings: {},
   audit: [],
 };
 
@@ -237,6 +240,15 @@ class JsonRepository implements Repository {
   async deleteAssignment(id: string) {
     await this.mutate((db) => {
       db.assignments = db.assignments.filter((a) => a.id !== id);
+    });
+  }
+
+  async getDuelRating(userId: string) {
+    return (await this.load()).duelRatings[userId] ?? null;
+  }
+  async putDuelRating(r: DuelRating) {
+    await this.mutate((db) => {
+      db.duelRatings[r.userId] = r;
     });
   }
 

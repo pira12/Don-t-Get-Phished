@@ -82,6 +82,15 @@ export type RoundEvent = {
   techniqueCaught: TechniqueCounts;
 };
 
+/** Server-side ranked rating for online duels (Elo). */
+export type DuelRating = {
+  userId: string;
+  rating: number;
+  wins: number;
+  losses: number;
+  draws: number;
+};
+
 export type AuditEntry = {
   id: string;
   orgId: string;

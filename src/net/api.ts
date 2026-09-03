@@ -64,6 +64,15 @@ export const api = {
   deleteAssignment: (id: string) => call<{ ok: boolean }>(`/admin/assignments/${id}`, { method: "DELETE" }),
   myAssignments: (orgId: string) => call<{ assignments: MyAssignment[] }>(`/assignments?orgId=${orgId}`),
 
+  // online duels (real-time matchmaking)
+  duelQueue: (size: number, difficulty: string) =>
+    call<DuelQueueResponse>("/duel/queue", { method: "POST", body: JSON.stringify({ size, difficulty }) }),
+  duelCancel: (matchId: string) => call<{ ok: boolean }>(`/duel/queue?matchId=${matchId}`, { method: "DELETE" }),
+  duelMatch: (matchId: string) => call<DuelMatchView>(`/duel/match/${matchId}`),
+  duelAnswer: (matchId: string, correct: boolean, elapsedMs: number) =>
+    call<DuelMatchView>(`/duel/match/${matchId}/answer`, { method: "POST", body: JSON.stringify({ correct, elapsedMs }) }),
+  duelForfeit: (matchId: string) => call<DuelMatchView>(`/duel/match/${matchId}/forfeit`, { method: "POST" }),
+
   // compliance reports
   reportCsvUrl: (orgId: string, type: ReportType) => `/api/admin/report?orgId=${orgId}&type=${type}&format=csv`,
   reportJson: (orgId: string, type: ReportType) =>
@@ -74,6 +83,31 @@ export const api = {
 
 export type ReportType = "members" | "assignments" | "techniques" | "audit";
 export type ReportTable = { headers: string[]; rows: (string | number)[][] };
+
+export type DuelQueueResponse = {
+  matchId: string;
+  role: 1 | 2;
+  status: "waiting" | "active" | "finished";
+  seed: number;
+  size: number;
+  difficulty: "easy" | "medium" | "hard" | "mixed";
+  rating: number;
+};
+
+export type DuelMatchView = {
+  matchId: string;
+  status: "waiting" | "active" | "finished";
+  seed: number;
+  size: number;
+  difficulty: "easy" | "medium" | "hard" | "mixed";
+  you: { score: number; index: number; finished: boolean };
+  opponent: { name: string; score: number; index: number; finished: boolean } | null;
+  bothFinished: boolean;
+  winnerId?: string | null;
+  youWon?: boolean | null;
+  ratingAfter?: number;
+  ratingDelta?: number;
+};
 
 /** ServerEmail as returned to the client — the GameEmail shape plus meta. */
 export type ServerEmailDto = {

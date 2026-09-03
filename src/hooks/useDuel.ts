@@ -67,12 +67,12 @@ export function useDuel() {
   );
 
   const answer = useCallback(
-    (verdict: Verdict) => {
+    (verdict: Verdict, elapsedMsArg?: number) => {
       setPlayerMoves((prev) => {
         if (prev.length !== index) return prev; // guard against double-answer
         const email = deck[index];
         if (!email) return prev;
-        const elapsedMs = Date.now() - emailStartRef.current;
+        const elapsedMs = elapsedMsArg ?? Date.now() - emailStartRef.current;
         const correct = verdict === email.truth;
         const move: PlayerMove = { verdict, correct, elapsedMs, points: duelPointsFor(correct, elapsedMs) };
         const next = [...prev, move];

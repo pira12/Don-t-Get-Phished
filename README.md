@@ -63,8 +63,8 @@ Other scripts:
 
 ```bash
 npm run lint           # eslint (next/core-web-vitals)
-npm run test           # 53 unit tests (game logic + server: leaderboard,
-                       #   assignments, content sanitisation, reports) (vitest)
+npm run test           # 56 unit tests (game logic incl. Elo + server:
+                       #   leaderboard, assignments, content, reports) (vitest)
 ```
 
 Requires Node 18.18+ (developed on Node 22). For the enterprise Postgres path and
@@ -136,17 +136,18 @@ and publish/version control, sanitised server-side and served into members' roun
 and **assignments** (difficulty/technique focus + accuracy target + due date, with
 completion tracked from rounds and surfaced to players in the inbox);
 **exportable compliance reports** (per-member status, assignment completion,
-technique coverage and an audit log as CSV, plus a printable PDF summary). A
-file-backed free datastore and a committed Postgres/Docker path.
+technique coverage and an audit log as CSV, plus a printable PDF summary); and
+**real-time online 1v1 matchmaking** (get matched with another live player, race the
+same seeded deck with server-authoritative scoring and Elo, with the bot as an
+offline fallback). A file-backed free datastore and a committed Postgres/Docker path.
 
 **Remaining (Phase 2b)** — the seams are in place:
 
-- **Real-time 1v1 matchmaking** over websockets — the same pure `buildDuelDeck`
-  / `simulateBot` / duel-scoring used by offline duels becomes authoritative
-  server-side scoring; only the transport (who you race) changes.
 - Seasons, tournaments, company challenges (round events + timeframe windows are
   already the substrate).
 - SSO/SCIM, webhooks/SIEM/LMS, Slack/Teams hooks.
+- Multi-node matchmaking: the live-match hub is in-memory (correct for one node);
+  moving it to Redis is the only change for horizontal scale.
 
 ---
 
@@ -184,6 +185,8 @@ src/
     assignments.ts         PURE assignment-completion logic (tested)
     content.ts             PURE email validation + HTML sanitisation (tested)
     reports.ts             PURE CSV serialisation + report builders (tested)
+    duelHub.ts             in-memory live-match manager (matchmaking, scoring)
+    duelFinalize.ts        one-time Elo application on match finish
     guard.ts               requireOrgAdmin / requireMember helpers
     types.ts, ids.ts, http.ts
   net/                     client-side backend integration (offline-first)
@@ -192,7 +195,8 @@ src/
 
   context/ThemeContext.tsx theme + light/dark, persisted, live-swapping
   hooks/useGame.ts         solo/daily game state, scoring, stats
-  hooks/useDuel.ts         duel state (deck, bot, live score, rating)
+  hooks/useDuel.ts         offline bot-duel state (deck, bot, live score, rating)
+  hooks/useOnlineDuel.ts   online duel: matchmaking + live race via the API
   lib/                     format helpers + DOM highlight for evidence chips
   components/online/       LeaderboardView, OrgsView, AdminView, ContentAdmin,
                            AssignmentsAdmin, ReportsAdmin, PrintReport, PageShell
@@ -203,11 +207,13 @@ src/
                            RoundSummary, GameSidebar, ThemeSwitcher, TopBar,
                            Onboarding, HintBubble, ShortcutsModal, StatsView,
                            AccountMenu, Avatar
-    components/duel/       DuelScreen, DuelLobby, DuelArena, DuelResult, DuelBar
+    components/duel/       DuelScreen, DuelLobby, DuelArena, DuelResult, DuelBar,
+                           DuelStage (shared arena), OnlineDuel (matchmaking + race)
 
 app/api/                   route handlers: auth/*, sync, rounds, leaderboard,
-                           orgs, orgs/join, content, assignments, admin/overview,
-                           admin/content*, admin/assignments*, admin/report
+                           orgs, orgs/join, content, assignments, duel/* (queue +
+                           match answer/forfeit), admin/overview, admin/content*,
+                           admin/assignments*, admin/report
 prisma/schema.prisma       enterprise Postgres target (mirrors the Repository)
 docker-compose.yml         app + Postgres + Redis stack
 ```
@@ -265,6 +271,13 @@ it and flip `DATABASE_DRIVER`). Copy `.env.example` to `.env` to configure
   team; completion is computed from members' round events and shown to admins
   (per-assignment progress) and to players (an inbox banner with a "Train now"
   shortcut that starts a matching round).
+- **Real-time online duels** (`/api/duel/*`) — matchmaking pairs two waiting players
+  into a match on a shared seed; both build the identical deck client-side and race,
+  with the server holding authoritative per-email scores (via the same pure
+  `duelPointsFor`) and applying **Elo** on finish. Live opponent progress is polled
+  (SSE is the drop-in upgrade); disconnects resolve via a grace-period forfeit; and
+  when no human is waiting the player drops to the always-available **bot** — so
+  duels work with or without an opponent, online or off.
 - **Compliance reports** (`/api/admin/report`, role-gated) — audit-ready CSV exports
   (per-member training status, assignment completion, technique coverage, and the
   audit log) plus a **printable PDF summary** (`/admin/print`, save-as-PDF from the
@@ -343,11 +356,13 @@ In production this content moves into the database (`orgId | null`, `version`,
   persistence goes through `src/server/repository.ts`. The default `jsonRepository`
   is file-backed and free; enterprises implement the same interface over
   Prisma/Postgres and flip `DATABASE_DRIVER` — no API or UI changes.
-- **Duels are already server-shaped.** A duel is fully described by a compact
-  **challenge code** (`v1-<seed>-<size>-<diff>`). `buildDuelDeck`, `simulateBot`, and
-  the duel scoring functions are pure and deterministic, so the exact same seed →
-  deck → score pipeline becomes authoritative server-side scoring for real-time
-  matchmaking in Phase 2 — only *who you race* changes, not the game.
+- **One duel engine, two transports.** A duel is fully described by a compact
+  **challenge code** (`v1-<seed>-<size>-<diff>`); `buildDuelDeck`, `simulateBot`, and
+  the scoring functions are pure and deterministic. The offline bot duel and the
+  online matchmade duel run the *same* seed → deck → score pipeline — only *who you
+  race* differs (a local bot vs a server-paired human), and the server reuses
+  `duelPointsFor` for authoritative online scoring. `DuelStage` is the shared arena UI
+  for both.
 - **Determinism.** `rng.ts` (seeded mulberry32 + FNV-1a) powers both the daily
   challenge (seeded by date) and duels (seeded by challenge code), guaranteeing every
   player gets an identical set — a property the backend can trust and reproduce.

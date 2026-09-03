@@ -8,12 +8,14 @@ import { TopBar } from "@/components/TopBar";
 import { DuelLobby } from "./DuelLobby";
 import { DuelArena } from "./DuelArena";
 import { DuelResult } from "./DuelResult";
+import { OnlineDuel } from "./OnlineDuel";
 
 export function DuelScreen() {
   const duel = useDuel();
   const [handle, setHandle] = useState("");
   const [incoming, setIncoming] = useState<DuelConfig | null>(null);
   const [origin, setOrigin] = useState("");
+  const [online, setOnline] = useState<{ size: number; difficulty: DuelConfig["difficulty"] } | null>(null);
 
   useEffect(() => {
     setHandle(store.loadStats().handle);
@@ -34,11 +36,33 @@ export function DuelScreen() {
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-canvas text-ink">
       <TopBar handle={handle} onShortcuts={() => {}} />
       <div className="min-h-0 flex-1 overflow-hidden">
-        {duel.phase === "lobby" && (
-          <DuelLobby duel={duel} you={handle} incoming={incoming} origin={origin} />
+        {online ? (
+          <OnlineDuel
+            you={handle}
+            size={online.size}
+            difficulty={online.difficulty}
+            onPlayBot={() => {
+              const cfg = newChallenge(online.size, online.difficulty, handle);
+              setOnline(null);
+              duel.start(cfg, duel.botSkill, duel.opponentName);
+            }}
+            onExit={() => setOnline(null)}
+          />
+        ) : (
+          <>
+            {duel.phase === "lobby" && (
+              <DuelLobby
+                duel={duel}
+                you={handle}
+                incoming={incoming}
+                origin={origin}
+                onFindOnline={(size) => setOnline({ size, difficulty: "mixed" })}
+              />
+            )}
+            {duel.phase === "playing" && <DuelArena duel={duel} you={handle} />}
+            {duel.phase === "result" && <DuelResult duel={duel} onRematch={onRematch} />}
+          </>
         )}
-        {duel.phase === "playing" && <DuelArena duel={duel} you={handle} />}
-        {duel.phase === "result" && <DuelResult duel={duel} onRematch={onRematch} />}
       </div>
     </div>
   );

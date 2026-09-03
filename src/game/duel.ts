@@ -131,7 +131,21 @@ export function duelOutcome(playerScore: number, botScore: number): DuelOutcome 
   return "draw";
 }
 
-/** Simple, transparent rating delta (Phase 1 local rating; Phase 2 uses server Elo). */
+/** Simple, transparent rating delta for offline bot duels (local rating). */
 export function ratingDelta(outcome: DuelOutcome): number {
   return outcome === "win" ? 25 : outcome === "draw" ? 0 : -18;
+}
+
+/** Elo expected score for a player rated `myR` against `oppR`. */
+export function eloExpected(myR: number, oppR: number): number {
+  return 1 / (1 + Math.pow(10, (oppR - myR) / 400));
+}
+
+/** Elo rating delta for online duels. score = 1 win / 0.5 draw / 0 loss. */
+export function eloDelta(myR: number, oppR: number, score: number, k = 24): number {
+  return Math.round(k * (score - eloExpected(myR, oppR)));
+}
+
+export function scoreForOutcome(outcome: DuelOutcome): number {
+  return outcome === "win" ? 1 : outcome === "draw" ? 0.5 : 0;
 }

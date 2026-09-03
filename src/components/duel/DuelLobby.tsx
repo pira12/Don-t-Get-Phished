@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bot, Swords, Link2, Copy, Check, Home, Trophy } from "lucide-react";
+import { Bot, Swords, Link2, Copy, Check, Home, Trophy, Wifi } from "lucide-react";
+import { useSession } from "@/net/session";
 import type { UseDuel } from "@/hooks/useDuel";
 import {
   BOT_PROFILES,
@@ -20,12 +21,15 @@ export function DuelLobby({
   you,
   incoming,
   origin,
+  onFindOnline,
 }: {
   duel: UseDuel;
   you: string;
   incoming: DuelConfig | null;
   origin: string;
+  onFindOnline: (size: number) => void;
 }) {
+  const session = useSession();
   const [skill, setSkill] = useState<BotSkill>("analyst");
   const [size, setSize] = useState(7);
   const [link, setLink] = useState<string>("");
@@ -142,6 +146,33 @@ export function DuelLobby({
           ))}
         </div>
       </div>
+
+      {/* Online matchmaking (signed-in players only) */}
+      {session.status === "authed" ? (
+        <div className="flex flex-col gap-3 rounded-2xl border border-accent/40 bg-accent-soft p-5 sm:flex-row sm:items-center">
+          <div className="flex-1">
+            <h3 className="inline-flex items-center gap-2 font-semibold text-ink">
+              <Wifi size={16} className="text-accent" /> Play online
+            </h3>
+            <p className="text-xs text-ink-muted">
+              Get matched with another real player and race the same emails live. No opponent
+              waiting? You can drop to a bot.
+            </p>
+          </div>
+          <button
+            onClick={() => onFindOnline(size)}
+            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-[color:var(--accent-ink)] hover:brightness-110"
+          >
+            <Wifi size={15} /> Find online opponent
+          </button>
+        </div>
+      ) : session.backendAvailable ? (
+        <div className="rounded-2xl border border-border bg-surface p-4 text-xs text-ink-muted">
+          <Wifi size={14} className="mr-1 inline text-ink-faint" />
+          Sign in (top-right) to play live against other real players. Bot duels and challenge links
+          work without an account.
+        </div>
+      ) : null}
 
       {/* Actions */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
