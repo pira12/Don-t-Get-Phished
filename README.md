@@ -16,18 +16,27 @@ never blocked by an account.
 
 ## Built in two phases
 
-- **Phase 1 (this build) — frontend-only, deployable as a static site.** Everything
-  runs in the browser with progress in `localStorage`: the realistic inbox and all
-  forensic tools, solo rounds and difficulty progression, local gamification
-  (XP/levels/tiers/streaks/badges), a **deterministic daily challenge** (same for
-  everyone on a date), personal stats, and **offline/async duels** — a shareable
-  **challenge link** that encodes a fixed email sequence + seed, plus a tunable
-  **bot opponent**. No backend, no login.
-- **Phase 2 (roadmap) — hosted backend for online/social.** Postgres + websockets +
-  Redis add optional accounts & cross-device sync, live global/org/team
-  leaderboards, real-time 1v1 matchmaking, orgs + admin dashboard + reporting, and
-  seasons/tournaments. Phase 1 is architected so this is a **swap of the data layer,
-  not a rewrite** — see [Architecture](#architecture--extension-points).
+- **Phase 1 — offline-first game.** Everything runs in the browser with progress in
+  `localStorage`: the realistic inbox and all forensic tools, solo rounds and
+  difficulty progression, local gamification (XP/levels/tiers/streaks/badges), a
+  **deterministic daily challenge** (same for everyone on a date), personal stats,
+  and **offline/async duels** — a shareable challenge link + tunable bot. Works with
+  no backend and no login.
+- **Phase 2 — the hosted backend (in this build).** Adds, as an **additive sync
+  overlay** on top of the offline-first game: optional **magic-link accounts** with
+  **guest-progress adoption** and cross-device merge; live **global / org
+  leaderboards** (ranked by accuracy-scaled score); **orgs via join code**; and an
+  **admin dashboard** with a weakness heatmap, per-member drill-down, and audit log.
+  It self-hosts **free with no database** (a file-backed store) and offers a
+  **Postgres** path for enterprises who want to own their data. See
+  [Backend & self-hosting](#backend--self-hosting).
+- **Phase 2b (remaining roadmap).** Real-time 1v1 matchmaking over websockets,
+  seasons/tournaments/company challenges, SSO/SCIM, and webhooks/Slack. The seams
+  for these are in place (see Architecture).
+
+The whole point of the split: **online features never gate play.** If the backend
+is unreachable (or you deploy frontend-only), the UI silently drops to guest mode
+and solo play, the daily challenge, and duels keep working.
 
 ---
 
@@ -35,26 +44,30 @@ never blocked by an account.
 
 ```bash
 npm install
-npm run dev            # dev server at http://localhost:3000
+npm run dev            # http://localhost:3000
 ```
 
-Build & deploy as a **static site** (Phase 1 emits `out/`):
+That's it — the game plays immediately as a guest, and the backend runs against a
+**local file store** (`./.data/izd-db.json`) with **no database to set up**. Sign in
+from the account menu (top-right); in dev the magic-link code is returned inline so
+the flow is fully usable without an email provider.
+
+Production (free, self-hosted, no database):
 
 ```bash
-npm run build          # produces ./out — a fully static site
-npx serve out          # preview it locally, or upload ./out to any static host
-                       # (GitHub Pages, Netlify, S3/CloudFront, Vercel, ...)
+npm run build
+npm run start          # Node server with the backend on, data in ./.data
 ```
 
 Other scripts:
 
 ```bash
 npm run lint           # eslint (next/core-web-vitals)
-npm run test           # 31 unit tests for the pure game logic (vitest)
+npm run test           # 38 unit tests (game logic + server leaderboard) (vitest)
 ```
 
-Requires Node 18.18+ (developed on Node 22). Because Phase 1 is a static export,
-`next start` is not used — serve the generated `out/` directory instead.
+Requires Node 18.18+ (developed on Node 22). For the enterprise Postgres path and
+Docker, see [Backend & self-hosting](#backend--self-hosting).
 
 ---
 
@@ -111,23 +124,24 @@ is complete and runnable:
 - **40+ authored emails** across easy/medium/hard, balanced phishing/legit, covering
   every technique in the brief.
 
-### Phase 2 (designed-for, not yet built)
+### Phase 2 status
 
-The data model, the `GameStore` seam, module boundaries, and `orgId`-on-every-row
-soft multi-tenancy are shaped so the following layer on **without rewriting the
-game**. They are **not** in this build:
+**Built in this repo** (see [Backend & self-hosting](#backend--self-hosting)):
+optional magic-link accounts with guest-progress adoption + cross-device sync; REST
+API; global/org leaderboards (weekly/seasonal/all-time); orgs via join code; an
+admin dashboard (overview, weakness heatmap, per-member drill-down, audit log);
+a file-backed free datastore and a committed Postgres/Docker path.
 
-- Postgres system-of-record (Prisma/Drizzle), tRPC/REST API, optional magic-link /
-  OAuth accounts that adopt guest progress and sync across devices.
-- Live **global / org / team leaderboards** and **real-time 1v1 matchmaking** — the
-  same seed/deck/score functions used by offline duels here become authoritative
+**Remaining (Phase 2b)** — the seams are in place:
+
+- **Real-time 1v1 matchmaking** over websockets — the same pure `buildDuelDeck`
+  / `simulateBot` / duel-scoring used by offline duels becomes authoritative
   server-side scoring; only the transport (who you race) changes.
-- **Admin dashboard**: org overview, weakness heatmap by team, assignments, custom
-  content editor, exportable compliance reports, audit log, org settings.
-- Seasons, tournaments, company challenges.
-- Docker Compose for a single-tenant self-hosted deployment.
-
-See **Architecture** below for exactly where each of these plugs in.
+- Seasons, tournaments, company challenges (round events + timeframe windows are
+  already the substrate).
+- Assignments + custom-content editor (the versioned, `orgId`-scoped email model is
+  ready), exportable compliance reports.
+- SSO/SCIM, webhooks/SIEM/LMS, Slack/Teams hooks.
 
 ---
 
@@ -156,17 +170,35 @@ src/
 
   data/emails.ts           the 40+ authored, versioned seed dataset
 
+  server/                  BACKEND (Phase 2) — the Repository seam + pure logic
+    repository.ts          the datastore interface (one seam for all persistence)
+    jsonRepository.ts      default file-backed store (free, zero-dependency)
+    db.ts                  driver selection (json | prisma)
+    auth.ts                HMAC session cookies + magic-link tokens
+    leaderboard.ts         PURE ranking / timeframe / weakness-heatmap (tested)
+    types.ts, ids.ts, http.ts
+  net/                     client-side backend integration (offline-first)
+    api.ts                 typed fetch client (fails soft with no backend)
+    session.tsx            SessionProvider: auth + two-way stat sync overlay
+
   context/ThemeContext.tsx theme + light/dark, persisted, live-swapping
   hooks/useGame.ts         solo/daily game state, scoring, stats
   hooks/useDuel.ts         duel state (deck, bot, live score, rating)
   lib/                     format helpers + DOM highlight for evidence chips
+  components/online/       LeaderboardView, OrgsView, AdminView, PageShell
   components/              InboxLayout, FolderRail, EmailList, ReadingPane,
                            EmailMessage (shared realistic email + tools),
                            SenderDetails, HeaderPanel, LinkInspector, LinkStatusBar,
                            AttachmentChip, ClassificationBar, FeedbackPanel,
                            RoundSummary, GameSidebar, ThemeSwitcher, TopBar,
-                           Onboarding, HintBubble, ShortcutsModal, StatsView, Avatar
+                           Onboarding, HintBubble, ShortcutsModal, StatsView,
+                           AccountMenu, Avatar
     components/duel/       DuelScreen, DuelLobby, DuelArena, DuelResult, DuelBar
+
+app/api/                   route handlers: auth/*, sync, rounds, leaderboard,
+                           orgs, orgs/join, admin/overview
+prisma/schema.prisma       enterprise Postgres target (mirrors the Repository)
+docker-compose.yml         app + Postgres + Redis stack
 ```
 
 Game logic never imports React; UI never re-implements scoring. That split — plus
@@ -174,6 +206,49 @@ the single `GameStore` seam for all persistence — is what lets the same rules 
 later on a server for live duels and leaderboards.
 
 ---
+
+## Backend & self-hosting
+
+The backend is **optional and offline-first**. It self-hosts three ways:
+
+| Mode | Command | Data | For |
+| --- | --- | --- | --- |
+| **Free / no DB** (default) | `npm run build && npm run start` | `./.data/izd-db.json` (file store) | Individuals, small teams, self-hosters |
+| **Docker (with Postgres+Redis)** | `docker compose up --build` | Postgres volume | Teams who want a stack |
+| **Enterprise / own DB** | set `DATABASE_DRIVER=prisma` + `DATABASE_URL` | Your Postgres | Orgs that must control their data |
+
+All three implement the **same `Repository` interface** (`src/server/repository.ts`).
+The default `jsonRepository` needs zero dependencies; the enterprise path uses the
+committed `prisma/schema.prisma` (implement `src/server/prismaRepository.ts` against
+it and flip `DATABASE_DRIVER`). Copy `.env.example` to `.env` to configure
+`AUTH_SECRET`, the driver, and the (optional) email provider.
+
+**What the backend adds** (all gated so guests are never blocked):
+
+- **Magic-link accounts** (`/api/auth/*`) — no passwords, no SSO required. In dev
+  (no mail provider) the login code is returned inline; wire an email sender and set
+  `EMAIL_ENABLED=1` for production.
+- **Guest-progress adoption + cross-device sync** — on sign-in, local stats are
+  pushed up and merged with the server via a monotonic element-wise max, so nothing
+  is lost or double-counted.
+- **Leaderboards** (`/api/leaderboard`) — Global and Org scopes × Weekly / Seasonal /
+  All-time, ranked by **points scaled by accuracy** (grinding easy emails can't top a
+  careful expert); accuracy and false-positive rate shown alongside; your own rank is
+  always returned even when off-screen. Live-ish via polling (SSE is the drop-in
+  upgrade).
+- **Orgs via join code** (`/api/orgs`, `/api/orgs/join`) — create an org in a minute
+  (creator becomes `org_admin`), grow it by sharing `PHISH-XXXXXX`. `orgId` on every
+  round event keeps org data isolated; the global pool is always available too.
+- **Admin dashboard** (`/api/admin/overview`, role-gated) — org overview,
+  **weakness heatmap** (which techniques the workforce misses most), per-member
+  drill-down with a constructive "needs practice" flag, and an audit log.
+
+**Security model.** Sessions are stateless **HMAC-signed cookies** (`AUTH_SECRET`);
+magic tokens are single-use and time-boxed. Admin routes verify `org_admin`
+membership server-side (a non-admin gets `403`). Round submissions are clamped and
+only accept an `orgId` the caller belongs to. Leaderboard display honours a
+per-org privacy setting (real name / handle / anonymous). Set a strong `AUTH_SECRET`
+and serve over HTTPS in production.
 
 ## Adding new emails
 
@@ -231,11 +306,16 @@ In production this content moves into the database (`orgId | null`, `version`,
 - **Guest-first identity.** A player is a handle + an anonymous id in
   `localStorage` (`src/game/storage.ts`). Optional accounts (magic-link / OAuth) are
   meant only to persist and sync that same shape across devices — never a gate.
-- **The `GameStore` seam (the one thing Phase 2 swaps).** All persistence goes
-  through `src/game/store.ts` — a `GameStore` interface with a `localStore`
-  implementation. Phase 2 provides an `apiStore` implementing the same interface for
-  signed-in players and cross-device sync; `useGame`/`useDuel` and every component
-  are unchanged.
+- **Offline-first client + additive sync overlay.** Local play stays authoritative
+  through `src/game/store.ts` (`GameStore`/`localStore`) — no network on the critical
+  path. `src/net/session.tsx` is the overlay: on sign-in it pushes local stats up and
+  merges the server's down (monotonic max), and after each round it fires the result
+  to `/api/rounds`. Every online surface fails soft, so removing the backend just
+  hides those features.
+- **Server `Repository` seam (the one thing the datastore swaps).** All server
+  persistence goes through `src/server/repository.ts`. The default `jsonRepository`
+  is file-backed and free; enterprises implement the same interface over
+  Prisma/Postgres and flip `DATABASE_DRIVER` — no API or UI changes.
 - **Duels are already server-shaped.** A duel is fully described by a compact
   **challenge code** (`v1-<seed>-<size>-<diff>`). `buildDuelDeck`, `simulateBot`, and
   the duel scoring functions are pure and deterministic, so the exact same seed →

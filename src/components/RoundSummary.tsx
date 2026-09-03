@@ -7,6 +7,7 @@ import { CheckCircle2, XCircle, RefreshCw, TrendingUp, BarChart3 } from "lucide-
 import type { UseGame } from "@/hooks/useGame";
 import type { Difficulty, RedFlagType } from "@/game/types";
 import { TECHNIQUE_LABELS } from "@/game/types";
+import { useSession } from "@/net/session";
 
 const NEXT_DIFFICULTY: Record<Difficulty, Difficulty | "mixed"> = {
   easy: "medium",
@@ -17,10 +18,33 @@ const NEXT_DIFFICULTY: Record<Difficulty, Difficulty | "mixed"> = {
 export function RoundSummary({ game }: { game: UseGame }) {
   const { answered, roundScore, config, startRound, finalizeRound } = game;
   const answers = useMemo(() => Object.values(answered), [answered]);
+  const session = useSession();
 
-  // Roll up round-level achievements + daily streak exactly once.
+  // Roll up round-level achievements + daily streak exactly once, and — if the
+  // player is signed in — submit the round to the backend (leaderboards + heatmap).
   useEffect(() => {
     finalizeRound();
+    if (session.status === "authed" && answers.length > 0) {
+      const techniqueSeen: Partial<Record<RedFlagType, number>> = {};
+      const techniqueCaught: Partial<Record<RedFlagType, number>> = {};
+      for (const a of answers) {
+        if (a.email.truth !== "phishing") continue;
+        for (const t of a.email.techniqueTags ?? []) {
+          techniqueSeen[t] = (techniqueSeen[t] ?? 0) + 1;
+          if (a.result.correct) techniqueCaught[t] = (techniqueCaught[t] ?? 0) + 1;
+        }
+      }
+      session.submitRound({
+        difficulty: String(config.difficulty ?? "mixed"),
+        total: answers.length,
+        correct: answers.filter((a) => a.result.correct).length,
+        points: roundScore,
+        falsePositives: answers.filter((a) => a.result.falsePositive).length,
+        falseNegatives: answers.filter((a) => a.result.falseNegative).length,
+        techniqueSeen,
+        techniqueCaught,
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -29,3 +29,7 @@ next-env.d.ts
 
 # testing
 /coverage
+
+# self-hosted file datastore (default backend)
+/.data
+

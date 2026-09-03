@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ShieldCheck, Menu, BarChart3, Keyboard } from "lucide-react";
+import { Search, ShieldCheck, Menu, BarChart3, Keyboard, Trophy } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
-import { Avatar } from "./Avatar";
+import { AccountMenu } from "./AccountMenu";
 
 /**
  * A neutral, generic mail-client top bar. No trademarked wordmark — a generic
@@ -56,8 +56,16 @@ export function TopBar({
         >
           <BarChart3 size={16} />
         </Link>
+        <Link
+          href="/leaderboard"
+          aria-label="Leaderboards"
+          title="Leaderboards"
+          className="hidden rounded-full border border-border p-2 text-ink-muted hover:bg-[var(--row-hover)] sm:block"
+        >
+          <Trophy size={16} />
+        </Link>
         <div className="flex items-center gap-2 pl-1">
-          <Avatar name={handle || "Guest"} size={32} />
+          <AccountMenu handle={handle} />
         </div>
       </div>
     </header>
