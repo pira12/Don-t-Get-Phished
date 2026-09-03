@@ -5,7 +5,7 @@ import { EMAILS } from "@/data/emails";
 import { evaluateAnswer, type AnswerResult } from "@/game/scoring";
 import { buildRound, type RoundOptions } from "@/game/rounds";
 import { levelForXp, tierForLevel } from "@/game/xp";
-import { updateDailyStreak, type LifetimeStats } from "@/game/storage";
+import { EMPTY_STATS, updateDailyStreak, type LifetimeStats } from "@/game/storage";
 import { store } from "@/game/store";
 import { buildDailyDeck, todayKey, type DailyResult } from "@/game/daily";
 import type { GameEmail, RedFlagType, Verdict } from "@/game/types";
@@ -45,7 +45,10 @@ type GameState = {
 const DEFAULT_SIZE = 10;
 
 export function useGame() {
-  const [stats, setStats] = useState<LifetimeStats>(() => ({ ...loadStats() }));
+  // Start from EMPTY_STATS so the first client render matches the server-rendered
+  // HTML (no localStorage on the server); the mount effect below hydrates the real
+  // stats. Initialising from localStorage here would cause a hydration mismatch.
+  const [stats, setStats] = useState<LifetimeStats>(EMPTY_STATS);
   const [config, setConfig] = useState<RoundConfig>({ size: DEFAULT_SIZE, difficulty: "easy" });
   const [state, setState] = useState<GameState>(() => ({
     deck: [],
@@ -61,6 +64,13 @@ export function useGame() {
   const startedAtRef = useRef<number>(Date.now());
   const toolsThisEmailRef = useRef<Set<ToolName>>(new Set());
 
+  // Published org-authored content, merged into practice rounds (not the daily
+  // challenge, which stays globally deterministic).
+  const orgPoolRef = useRef<GameEmail[]>([]);
+  const setOrgContent = useCallback((emails: GameEmail[]) => {
+    orgPoolRef.current = Array.isArray(emails) ? emails : [];
+  }, []);
+
   // Hydrate persisted stats on mount (client only).
   useEffect(() => {
     setStats({ ...loadStats() });
@@ -68,7 +78,8 @@ export function useGame() {
 
   const startRound = useCallback((cfg?: RoundConfig) => {
     const merged: RoundConfig = { size: DEFAULT_SIZE, difficulty: "easy", ...cfg };
-    const deck = buildRound(EMAILS, { ...merged, avoidIds: loadStats().answeredIds });
+    const pool = orgPoolRef.current.length ? [...EMAILS, ...orgPoolRef.current] : EMAILS;
+    const deck = buildRound(pool, { ...merged, avoidIds: loadStats().answeredIds });
     setConfig(merged);
     setState({
       deck,
@@ -284,6 +295,7 @@ export function useGame() {
     // actions
     startRound,
     startDaily,
+    setOrgContent,
     selectIndex,
     answer,
     next,

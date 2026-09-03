@@ -4,7 +4,7 @@
  * implementation for enterprises who want to control their own database.
  */
 
-import type { RedFlagType } from "@/game/types";
+import type { GameEmail, RedFlagType } from "@/game/types";
 
 export type Role = "player" | "org_admin";
 
@@ -89,6 +89,36 @@ export type AuditEntry = {
   action: string;
   detail: string;
   at: string;
+};
+
+/**
+ * Org-authored scenario email (custom content editor). Extends the same GameEmail
+ * schema employees play, plus versioning + publish state, scoped by org.
+ */
+export type ServerEmail = GameEmail & {
+  orgId: string;
+  version: number;
+  authorId: string;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AssignmentDifficulty = "easy" | "medium" | "hard" | "mixed";
+
+/** A training assignment an admin gives to individuals/teams/the whole org. */
+export type Assignment = {
+  id: string;
+  orgId: string;
+  createdBy: string;
+  title: string;
+  difficulty: AssignmentDifficulty;
+  focusTechnique: RedFlagType | null;
+  minAccuracy: number; // 0..1 target
+  minRounds: number; // how many qualifying rounds to complete
+  team: string | null; // null = whole org
+  dueDate: string | null;
+  createdAt: string;
 };
 
 /** Input the client sends when a round finishes. */

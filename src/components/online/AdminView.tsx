@@ -6,6 +6,10 @@ import { ArrowLeft, Shield, Users, Activity, Target, AlertTriangle, Copy, Check 
 import { useSession } from "@/net/session";
 import { api, type AdminOverviewResponse } from "@/net/api";
 import { TECHNIQUE_LABELS, type RedFlagType } from "@/game/types";
+import { ContentAdmin } from "./ContentAdmin";
+import { AssignmentsAdmin } from "./AssignmentsAdmin";
+
+type Tab = "overview" | "content" | "assignments";
 
 export function AdminView() {
   const session = useSession();
@@ -14,6 +18,7 @@ export function AdminView() {
     [session.memberships],
   );
   const [orgId, setOrgId] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("overview");
   const [data, setData] = useState<AdminOverviewResponse | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -67,9 +72,28 @@ export function AdminView() {
         )}
       </div>
 
+      {/* Tabs */}
+      <div className="mb-5 flex gap-2">
+        {(["overview", "content", "assignments"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={[
+              "rounded-full px-4 py-1.5 text-sm font-medium capitalize transition",
+              tab === t ? "bg-accent text-[color:var(--accent-ink)]" : "border border-border text-ink-muted hover:bg-[var(--row-hover)]",
+            ].join(" ")}
+          >
+            {t === "content" ? "Custom content" : t}
+          </button>
+        ))}
+      </div>
+
       {error && <p className="mb-3 text-sm text-danger">{error}</p>}
 
-      {data && (
+      {tab === "content" && orgId && <ContentAdmin orgId={orgId} />}
+      {tab === "assignments" && orgId && <AssignmentsAdmin orgId={orgId} />}
+
+      {tab === "overview" && data && (
         <>
           <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-3 text-sm">
             <span className="text-ink-muted">Invite people with join code</span>

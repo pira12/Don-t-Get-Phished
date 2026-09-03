@@ -9,11 +9,13 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Repository } from "./repository";
 import type {
+  Assignment,
   AuditEntry,
   MagicToken,
   Membership,
   Org,
   RoundEvent,
+  ServerEmail,
   User,
   UserStats,
 } from "./types";
@@ -25,6 +27,8 @@ type DB = {
   events: RoundEvent[];
   orgs: Record<string, Org>;
   memberships: Membership[];
+  emails: Record<string, ServerEmail>;
+  assignments: Assignment[];
   audit: AuditEntry[];
 };
 
@@ -35,6 +39,8 @@ const EMPTY: DB = {
   events: [],
   orgs: {},
   memberships: [],
+  emails: {},
+  assignments: [],
   audit: [],
 };
 
@@ -183,6 +189,54 @@ class JsonRepository implements Repository {
       if (filter.userId && m.userId !== filter.userId) return false;
       if (filter.orgId && m.orgId !== filter.orgId) return false;
       return true;
+    });
+  }
+
+  async createEmail(e: ServerEmail) {
+    return this.mutate((db) => {
+      db.emails[e.id] = e;
+      return e;
+    });
+  }
+  async getEmail(id: string) {
+    return (await this.load()).emails[id] ?? null;
+  }
+  async updateEmail(id: string, patch: Partial<ServerEmail>) {
+    return this.mutate((db) => {
+      const cur = db.emails[id];
+      if (!cur) return null;
+      db.emails[id] = { ...cur, ...patch };
+      return db.emails[id];
+    });
+  }
+  async deleteEmail(id: string) {
+    await this.mutate((db) => {
+      delete db.emails[id];
+    });
+  }
+  async listEmails(filter: { orgId: string; publishedOnly?: boolean }) {
+    const db = await this.load();
+    return Object.values(db.emails)
+      .filter((e) => e.orgId === filter.orgId && (!filter.publishedOnly || e.published))
+      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+  }
+
+  async createAssignment(a: Assignment) {
+    return this.mutate((db) => {
+      db.assignments.push(a);
+      return a;
+    });
+  }
+  async getAssignment(id: string) {
+    return (await this.load()).assignments.find((a) => a.id === id) ?? null;
+  }
+  async listAssignments(orgId: string) {
+    const db = await this.load();
+    return db.assignments.filter((a) => a.orgId === orgId).sort((x, y) => (x.createdAt < y.createdAt ? 1 : -1));
+  }
+  async deleteAssignment(id: string) {
+    await this.mutate((db) => {
+      db.assignments = db.assignments.filter((a) => a.id !== id);
     });
   }
 

@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, CalendarCheck, Swords } from "lucide-react";
-import type { Difficulty, Verdict } from "@/game/types";
+import { ChevronLeft, CalendarCheck, Swords, GraduationCap } from "lucide-react";
+import type { Difficulty, RedFlagType, Verdict } from "@/game/types";
 import { store } from "@/game/store";
 import { todayKey } from "@/game/daily";
+import { useSession } from "@/net/session";
+import { api, type MyAssignment } from "@/net/api";
 import { useGame } from "@/hooks/useGame";
 import { TopBar } from "./TopBar";
 import { FolderRail } from "./FolderRail";
@@ -21,7 +23,47 @@ const DIFFICULTIES: (Difficulty | "mixed")[] = ["easy", "medium", "hard", "mixed
 
 export function InboxLayout() {
   const game = useGame();
+  const session = useSession();
+  const [assignments, setAssignments] = useState<MyAssignment[]>([]);
   const [onboarding, setOnboarding] = useState(false);
+
+  // When signed in with an active org, fold that org's published content into
+  // practice rounds and load the member's assignments.
+  const { status: sessionStatus, activeOrgId } = session;
+  const setOrgContent = game.setOrgContent;
+  useEffect(() => {
+    if (sessionStatus !== "authed" || !activeOrgId) {
+      setOrgContent([]);
+      setAssignments([]);
+      return;
+    }
+    let cancelled = false;
+    void api
+      .memberContent(activeOrgId)
+      .then((r) => {
+        if (!cancelled) setOrgContent(r.emails as never);
+      })
+      .catch(() => {});
+    void api
+      .myAssignments(activeOrgId)
+      .then((r) => {
+        if (!cancelled) setAssignments(r.assignments);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionStatus, activeOrgId, setOrgContent]);
+
+  const openAssignments = assignments.filter((a) => !a.progress.complete);
+  const trainWeakSpot = () => {
+    const a = openAssignments[0]?.assignment;
+    if (!a) return;
+    game.startRound({
+      difficulty: (a.difficulty as Difficulty | "mixed") ?? "mixed",
+      focusTechniques: a.focusTechnique ? [a.focusTechnique as RedFlagType] : undefined,
+    });
+  };
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [handleDraft, setHandleDraft] = useState("");
 
@@ -204,6 +246,30 @@ export function InboxLayout() {
           />
         </div>
       </div>
+
+      {/* Assigned training banner (org members with open assignments) */}
+      {openAssignments.length > 0 && game.phase === "playing" && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-accent-soft px-3 py-2 text-sm md:px-5">
+          <GraduationCap size={16} className="text-accent" />
+          <span className="text-ink">
+            You have <strong>{openAssignments.length}</strong> assigned training
+            {openAssignments.length > 1 ? "s" : ""}
+            {openAssignments[0] && (
+              <span className="text-ink-muted">
+                {" "}
+                — next: “{openAssignments[0].assignment.title}” ({openAssignments[0].progress.qualifyingRounds}/
+                {openAssignments[0].assignment.minRounds} rounds, target {Math.round(openAssignments[0].assignment.minAccuracy * 100)}%)
+              </span>
+            )}
+          </span>
+          <button
+            onClick={trainWeakSpot}
+            className="ml-auto rounded-full bg-accent px-3 py-1 text-xs font-semibold text-[color:var(--accent-ink)] hover:brightness-110"
+          >
+            Train now
+          </button>
+        </div>
+      )}
 
       {/* Main three-pane area */}
       <div className="flex min-h-0 flex-1 overflow-hidden">

@@ -47,6 +47,76 @@ export const api = {
     call<{ org: ApiOrg; membership: ApiMembership }>("/orgs/join", { method: "POST", body: JSON.stringify({ code, team }) }),
 
   adminOverview: (orgId: string) => call<AdminOverviewResponse>(`/admin/overview?orgId=${orgId}`),
+
+  // custom content
+  listContent: (orgId: string) => call<{ emails: ServerEmailDto[] }>(`/admin/content?orgId=${orgId}`),
+  createContent: (orgId: string, email: unknown) =>
+    call<{ email: ServerEmailDto }>("/admin/content", { method: "POST", body: JSON.stringify({ ...(email as object), orgId }) }),
+  updateContent: (id: string, patch: unknown) =>
+    call<{ email: ServerEmailDto }>(`/admin/content/${id}`, { method: "PUT", body: JSON.stringify(patch) }),
+  deleteContent: (id: string) => call<{ ok: boolean }>(`/admin/content/${id}`, { method: "DELETE" }),
+  memberContent: (orgId: string) => call<{ emails: ServerEmailDto[] }>(`/content?orgId=${orgId}`),
+
+  // assignments
+  listAssignments: (orgId: string) => call<{ assignments: AdminAssignment[] }>(`/admin/assignments?orgId=${orgId}`),
+  createAssignment: (orgId: string, a: unknown) =>
+    call<{ assignment: AdminAssignment }>("/admin/assignments", { method: "POST", body: JSON.stringify({ ...(a as object), orgId }) }),
+  deleteAssignment: (id: string) => call<{ ok: boolean }>(`/admin/assignments/${id}`, { method: "DELETE" }),
+  myAssignments: (orgId: string) => call<{ assignments: MyAssignment[] }>(`/assignments?orgId=${orgId}`),
+};
+
+/** ServerEmail as returned to the client — the GameEmail shape plus meta. */
+export type ServerEmailDto = {
+  id: string;
+  orgId: string;
+  version: number;
+  published: boolean;
+  truth: "phishing" | "legit";
+  difficulty: "easy" | "medium" | "hard";
+  from: { name: string; address: string };
+  replyTo?: string;
+  to: string;
+  subject: string;
+  timestamp: string;
+  snippet: string;
+  bodyHtml: string;
+  links: { text: string; href: string }[];
+  attachments?: { name: string; sizeKB: number; suspicious?: boolean; reason?: string }[];
+  auth: { spf: string; dkim: string; dmarc: string };
+  firstTimeSender?: boolean;
+  mailedBy?: string;
+  signedBy?: string;
+  redFlags: { type: string; anchor: string; explanation: string }[];
+  legitSignals?: string[];
+  techniqueTags?: string[];
+  updatedAt: string;
+};
+
+export type AdminAssignment = {
+  id: string;
+  title: string;
+  difficulty: string;
+  focusTechnique: string | null;
+  minAccuracy: number;
+  minRounds: number;
+  team: string | null;
+  dueDate: string | null;
+  createdAt: string;
+  assignedCount: number;
+  completedCount: number;
+};
+
+export type MyAssignment = {
+  assignment: {
+    id: string;
+    title: string;
+    difficulty: string;
+    focusTechnique: string | null;
+    minAccuracy: number;
+    minRounds: number;
+    dueDate: string | null;
+  };
+  progress: { qualifyingRounds: number; complete: boolean; bestAccuracy: number };
 };
 
 export type LeaderboardRow = {

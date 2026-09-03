@@ -63,7 +63,8 @@ Other scripts:
 
 ```bash
 npm run lint           # eslint (next/core-web-vitals)
-npm run test           # 38 unit tests (game logic + server leaderboard) (vitest)
+npm run test           # 49 unit tests (game logic + server: leaderboard,
+                       #   assignments, content sanitisation) (vitest)
 ```
 
 Requires Node 18.18+ (developed on Node 22). For the enterprise Postgres path and
@@ -129,8 +130,12 @@ is complete and runnable:
 **Built in this repo** (see [Backend & self-hosting](#backend--self-hosting)):
 optional magic-link accounts with guest-progress adoption + cross-device sync; REST
 API; global/org leaderboards (weekly/seasonal/all-time); orgs via join code; an
-admin dashboard (overview, weakness heatmap, per-member drill-down, audit log);
-a file-backed free datastore and a committed Postgres/Docker path.
+admin dashboard (overview, weakness heatmap, per-member drill-down, audit log); a
+**custom-content editor** (author org-specific scenario emails with a live preview
+and publish/version control, sanitised server-side and served into members' rounds);
+and **assignments** (difficulty/technique focus + accuracy target + due date, with
+completion tracked from rounds and surfaced to players in the inbox). A file-backed
+free datastore and a committed Postgres/Docker path.
 
 **Remaining (Phase 2b)** — the seams are in place:
 
@@ -139,8 +144,7 @@ a file-backed free datastore and a committed Postgres/Docker path.
   server-side scoring; only the transport (who you race) changes.
 - Seasons, tournaments, company challenges (round events + timeframe windows are
   already the substrate).
-- Assignments + custom-content editor (the versioned, `orgId`-scoped email model is
-  ready), exportable compliance reports.
+- Exportable compliance reports (CSV/PDF) from the assignment + round data.
 - SSO/SCIM, webhooks/SIEM/LMS, Slack/Teams hooks.
 
 ---
@@ -176,6 +180,9 @@ src/
     db.ts                  driver selection (json | prisma)
     auth.ts                HMAC session cookies + magic-link tokens
     leaderboard.ts         PURE ranking / timeframe / weakness-heatmap (tested)
+    assignments.ts         PURE assignment-completion logic (tested)
+    content.ts             PURE email validation + HTML sanitisation (tested)
+    guard.ts               requireOrgAdmin / requireMember helpers
     types.ts, ids.ts, http.ts
   net/                     client-side backend integration (offline-first)
     api.ts                 typed fetch client (fails soft with no backend)
@@ -185,7 +192,8 @@ src/
   hooks/useGame.ts         solo/daily game state, scoring, stats
   hooks/useDuel.ts         duel state (deck, bot, live score, rating)
   lib/                     format helpers + DOM highlight for evidence chips
-  components/online/       LeaderboardView, OrgsView, AdminView, PageShell
+  components/online/       LeaderboardView, OrgsView, AdminView, ContentAdmin,
+                           AssignmentsAdmin, PageShell
   components/              InboxLayout, FolderRail, EmailList, ReadingPane,
                            EmailMessage (shared realistic email + tools),
                            SenderDetails, HeaderPanel, LinkInspector, LinkStatusBar,
@@ -196,7 +204,8 @@ src/
     components/duel/       DuelScreen, DuelLobby, DuelArena, DuelResult, DuelBar
 
 app/api/                   route handlers: auth/*, sync, rounds, leaderboard,
-                           orgs, orgs/join, admin/overview
+                           orgs, orgs/join, content, assignments,
+                           admin/overview, admin/content*, admin/assignments*
 prisma/schema.prisma       enterprise Postgres target (mirrors the Repository)
 docker-compose.yml         app + Postgres + Redis stack
 ```
@@ -242,6 +251,18 @@ it and flip `DATABASE_DRIVER`). Copy `.env.example` to `.env` to configure
 - **Admin dashboard** (`/api/admin/overview`, role-gated) — org overview,
   **weakness heatmap** (which techniques the workforce misses most), per-member
   drill-down with a constructive "needs practice" flag, and an audit log.
+- **Custom-content editor** (`/api/admin/content*`, role-gated) — org admins author
+  scenario emails against the same schema employees play, with a **live preview**
+  that renders exactly as members will see it, draft/publish state, and versioning.
+  Bodies are **sanitised server-side** (scripts/handlers/`javascript:` stripped)
+  because published content renders for every member. Published emails are served to
+  members (`/api/content`) and folded into their practice rounds (never the daily
+  challenge, which stays globally deterministic).
+- **Assignments** (`/api/admin/assignments*` + `/api/assignments`) — assign a
+  difficulty / technique focus / accuracy target / due date to the whole org or a
+  team; completion is computed from members' round events and shown to admins
+  (per-assignment progress) and to players (an inbox banner with a "Train now"
+  shortcut that starts a matching round).
 
 **Security model.** Sessions are stateless **HMAC-signed cookies** (`AUTH_SECRET`);
 magic tokens are single-use and time-boxed. Admin routes verify `org_admin`

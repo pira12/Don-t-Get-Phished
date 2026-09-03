@@ -8,11 +8,13 @@
  */
 
 import type {
+  Assignment,
   AuditEntry,
   MagicToken,
   Membership,
   Org,
   RoundEvent,
+  ServerEmail,
   User,
   UserStats,
 } from "./types";
@@ -47,6 +49,19 @@ export interface Repository {
   addMembership(m: Membership): Promise<void>;
   getMembership(userId: string, orgId: string): Promise<Membership | null>;
   listMemberships(filter: { userId?: string; orgId?: string }): Promise<Membership[]>;
+
+  // custom content (org-authored scenario emails)
+  createEmail(e: ServerEmail): Promise<ServerEmail>;
+  getEmail(id: string): Promise<ServerEmail | null>;
+  updateEmail(id: string, patch: Partial<ServerEmail>): Promise<ServerEmail | null>;
+  deleteEmail(id: string): Promise<void>;
+  listEmails(filter: { orgId: string; publishedOnly?: boolean }): Promise<ServerEmail[]>;
+
+  // assignments
+  createAssignment(a: Assignment): Promise<Assignment>;
+  getAssignment(id: string): Promise<Assignment | null>;
+  listAssignments(orgId: string): Promise<Assignment[]>;
+  deleteAssignment(id: string): Promise<void>;
 
   // audit
   addAudit(a: AuditEntry): Promise<void>;
