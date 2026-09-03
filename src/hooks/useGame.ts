@@ -5,13 +5,14 @@ import { EMAILS } from "@/data/emails";
 import { evaluateAnswer, type AnswerResult } from "@/game/scoring";
 import { buildRound, type RoundOptions } from "@/game/rounds";
 import { levelForXp, tierForLevel } from "@/game/xp";
-import {
-  loadStats,
-  saveStats,
-  updateDailyStreak,
-  type LifetimeStats,
-} from "@/game/storage";
+import { updateDailyStreak, type LifetimeStats } from "@/game/storage";
+import { store } from "@/game/store";
+import { buildDailyDeck, todayKey, type DailyResult } from "@/game/daily";
 import type { GameEmail, RedFlagType, Verdict } from "@/game/types";
+
+// Persistence flows through the GameStore seam (Phase 2 swaps it for an API).
+const loadStats = () => store.loadStats();
+const saveStats = (s: LifetimeStats) => store.saveStats(s);
 
 export type ToolName =
   | "sender_details"
@@ -29,6 +30,8 @@ export type PerEmailFeedback = {
 
 export type RoundConfig = RoundOptions & { label?: string };
 
+export type RoundMode = "practice" | "daily";
+
 type GameState = {
   deck: GameEmail[];
   index: number;
@@ -36,6 +39,7 @@ type GameState = {
   roundScore: number;
   streak: number;
   phase: "playing" | "summary";
+  mode: RoundMode;
 };
 
 const DEFAULT_SIZE = 10;
@@ -50,6 +54,7 @@ export function useGame() {
     roundScore: 0,
     streak: 0,
     phase: "playing",
+    mode: "practice",
   }));
 
   // Per-email investigation tracking (reset each time we move to a new email).
@@ -72,6 +77,23 @@ export function useGame() {
       roundScore: 0,
       streak: 0,
       phase: "playing",
+      mode: "practice",
+    });
+    startedAtRef.current = Date.now();
+    toolsThisEmailRef.current = new Set();
+  }, []);
+
+  const startDaily = useCallback(() => {
+    const deck = buildDailyDeck(EMAILS);
+    setConfig({ size: deck.length, difficulty: "mixed", label: "Daily challenge" });
+    setState({
+      deck,
+      index: 0,
+      answered: {},
+      roundScore: 0,
+      streak: 0,
+      phase: "playing",
+      mode: "daily",
     });
     startedAtRef.current = Date.now();
     toolsThisEmailRef.current = new Set();
@@ -196,8 +218,24 @@ export function useGame() {
 
   // When a round ends, roll up round-level achievements + daily streak.
   const finalizeRound = useCallback(() => {
+    const answers = Object.values(state.answered);
+
+    // Record the daily challenge result once (first completion of the day wins).
+    if (state.mode === "daily" && answers.length > 0) {
+      const dateKey = todayKey();
+      if (!store.getDailyResult(dateKey)) {
+        const result: DailyResult = {
+          dateKey,
+          correct: answers.filter((a) => a.result.correct).length,
+          total: answers.length,
+          points: state.roundScore,
+          completedAt: new Date().toISOString(),
+        };
+        store.setDailyResult(result);
+      }
+    }
+
     setStats((prev) => {
-      const answers = Object.values(state.answered);
       const allCorrect = answers.length > 0 && answers.every((a) => a.result.correct);
       const usedHeaders = answers.some((a) => a.usedHeaders);
 
@@ -211,7 +249,7 @@ export function useGame() {
       saveStats(next);
       return next;
     });
-  }, [state.answered]);
+  }, [state.answered, state.mode, state.roundScore]);
 
   const setHandle = useCallback((handle: string) => {
     setStats((prev) => {
@@ -231,6 +269,7 @@ export function useGame() {
     deck: state.deck,
     index: state.index,
     phase: state.phase,
+    mode: state.mode,
     currentEmail,
     currentFeedback,
     answered: state.answered,
@@ -244,6 +283,7 @@ export function useGame() {
     tier,
     // actions
     startRound,
+    startDaily,
     selectIndex,
     answer,
     next,

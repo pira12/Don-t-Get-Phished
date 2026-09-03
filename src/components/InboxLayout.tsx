@@ -1,8 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, CalendarCheck, Swords } from "lucide-react";
 import type { Difficulty, Verdict } from "@/game/types";
+import { store } from "@/game/store";
+import { todayKey } from "@/game/daily";
 import { useGame } from "@/hooks/useGame";
 import { TopBar } from "./TopBar";
 import { FolderRail } from "./FolderRail";
@@ -131,6 +134,12 @@ export function InboxLayout() {
 
   // Mobile collapses list -> reading view. Opening an email switches to "read".
   const [mobileView, setMobileView] = useState<"list" | "read">("read");
+
+  // Daily challenge completion (for the badge on the button).
+  const [dailyDone, setDailyDone] = useState(false);
+  useEffect(() => {
+    setDailyDone(!!store.getDailyResult(todayKey()));
+  }, [game.phase, game.mode]);
   const openEmail = (i: number) => {
     game.selectIndex(i);
     setMobileView("read");
@@ -140,8 +149,30 @@ export function InboxLayout() {
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-canvas text-ink">
       <TopBar handle={game.stats.handle} onShortcuts={() => setShowShortcuts(true)} />
 
-      {/* Difficulty + identity strip */}
+      {/* Mode + difficulty + identity strip */}
       <div className="flex flex-wrap items-center gap-2 border-b border-border bg-canvas px-3 py-2 md:px-5">
+        <button
+          onClick={() => game.startDaily()}
+          className={[
+            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition",
+            game.mode === "daily"
+              ? "bg-accent text-[color:var(--accent-ink)]"
+              : "border border-accent/40 text-accent hover:bg-accent-soft",
+          ].join(" ")}
+          title="A curated set that's the same for everyone today"
+        >
+          <CalendarCheck size={13} /> Daily{dailyDone ? " ✓" : ""}
+        </button>
+        <Link
+          href="/duel"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-semibold text-ink-muted transition hover:bg-[var(--row-hover)]"
+          title="Race a bot or challenge a coworker"
+        >
+          <Swords size={13} /> Duel
+        </Link>
+
+        <div className="mx-1 hidden h-4 w-px bg-border sm:block" />
+
         <span className="text-xs font-medium text-ink-muted">Difficulty:</span>
         {DIFFICULTIES.map((d) => (
           <button
@@ -149,7 +180,7 @@ export function InboxLayout() {
             onClick={() => game.startRound({ ...game.config, difficulty: d })}
             className={[
               "rounded-full px-3 py-1 text-xs font-medium capitalize transition",
-              (game.config.difficulty ?? "easy") === d
+              game.mode === "practice" && (game.config.difficulty ?? "easy") === d
                 ? "bg-accent text-[color:var(--accent-ink)]"
                 : "border border-border text-ink-muted hover:bg-[var(--row-hover)]",
             ].join(" ")}

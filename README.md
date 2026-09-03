@@ -14,26 +14,47 @@ never blocked by an account.
 > All emails are **fictional and AI-generated for education only**. Company and
 > product names are invented for realism and do not represent real organisations.
 
+## Built in two phases
+
+- **Phase 1 (this build) — frontend-only, deployable as a static site.** Everything
+  runs in the browser with progress in `localStorage`: the realistic inbox and all
+  forensic tools, solo rounds and difficulty progression, local gamification
+  (XP/levels/tiers/streaks/badges), a **deterministic daily challenge** (same for
+  everyone on a date), personal stats, and **offline/async duels** — a shareable
+  **challenge link** that encodes a fixed email sequence + seed, plus a tunable
+  **bot opponent**. No backend, no login.
+- **Phase 2 (roadmap) — hosted backend for online/social.** Postgres + websockets +
+  Redis add optional accounts & cross-device sync, live global/org/team
+  leaderboards, real-time 1v1 matchmaking, orgs + admin dashboard + reporting, and
+  seasons/tournaments. Phase 1 is architected so this is a **swap of the data layer,
+  not a rewrite** — see [Architecture](#architecture--extension-points).
+
 ---
 
 ## Quick start
 
 ```bash
 npm install
-npm run dev
-# open http://localhost:3000
+npm run dev            # dev server at http://localhost:3000
+```
+
+Build & deploy as a **static site** (Phase 1 emits `out/`):
+
+```bash
+npm run build          # produces ./out — a fully static site
+npx serve out          # preview it locally, or upload ./out to any static host
+                       # (GitHub Pages, Netlify, S3/CloudFront, Vercel, ...)
 ```
 
 Other scripts:
 
 ```bash
-npm run build      # production build
-npm run start      # run the production build
-npm run lint       # eslint (next/core-web-vitals)
-npm run test       # unit tests for the pure game logic (vitest)
+npm run lint           # eslint (next/core-web-vitals)
+npm run test           # 31 unit tests for the pure game logic (vitest)
 ```
 
-Requires Node 18.18+ (developed on Node 22).
+Requires Node 18.18+ (developed on Node 22). Because Phase 1 is a static export,
+`next start` is not used — serve the generated `out/` directory instead.
 
 ---
 
@@ -72,6 +93,15 @@ is complete and runnable:
   is a real-world failure mode.
 - **Round summary** (accuracy, points, per-technique caught/missed, review of every
   email) with **Play again / Next difficulty / Train my weak spots**.
+- **Daily challenge** (`/`, the "Daily" pill): a curated 8-email set derived
+  deterministically from the calendar day, so it's **the same for everyone that
+  day**. First completion of the day is recorded.
+- **Duels — offline / async** (`/duel`): quick-match a **tunable bot** (Rookie /
+  Analyst / Threat Hunter), or **"Challenge a coworker"** via a shareable link that
+  encodes a seed + settings so **both players get the identical email sequence** and
+  compare scores locally. Live versus-bar (opponent progress, per-email timer),
+  correctness-first scoring where a wrong call costs more than a slow-but-right one,
+  a local rating/record, and a **post-match side-by-side review** of every email.
 - **Personal stats** page: lifetime accuracy, best streak, tier/level, a
   **technique-by-technique heatmap**, FP/FN distribution, and a **badge gallery**.
 - **Onboarding** (3 skippable cards), a one-time contextual **hint bubble**, and a
@@ -81,18 +111,20 @@ is complete and runnable:
 - **40+ authored emails** across easy/medium/hard, balanced phishing/legit, covering
   every technique in the brief.
 
-### Roadmap (designed-for, not yet built)
+### Phase 2 (designed-for, not yet built)
 
-The data model, module boundaries, and `orgId`-on-every-row soft multi-tenancy are
-shaped so the following can be layered on without rework. They are **not** in this
-build:
+The data model, the `GameStore` seam, module boundaries, and `orgId`-on-every-row
+soft multi-tenancy are shaped so the following layer on **without rewriting the
+game**. They are **not** in this build:
 
 - Postgres system-of-record (Prisma/Drizzle), tRPC/REST API, optional magic-link /
-  OAuth accounts that adopt guest progress.
-- Real-time **1v1 duels**, live leaderboards, matchmaking (WebSockets + Redis), Elo
-  rating, tournaments & seasons.
+  OAuth accounts that adopt guest progress and sync across devices.
+- Live **global / org / team leaderboards** and **real-time 1v1 matchmaking** — the
+  same seed/deck/score functions used by offline duels here become authoritative
+  server-side scoring; only the transport (who you race) changes.
 - **Admin dashboard**: org overview, weakness heatmap by team, assignments, custom
   content editor, exportable compliance reports, audit log, org settings.
+- Seasons, tournaments, company challenges.
 - Docker Compose for a single-tenant self-hosted deployment.
 
 See **Architecture** below for exactly where each of these plugs in.
@@ -115,23 +147,31 @@ src/
     xp.ts                  XP curve, levels, tiers
     badges.ts              achievement definitions (each names a real skill)
     rounds.ts              deck building (balanced, difficulty, weakness focus)
-    storage.ts             local-first persistence (guest = first-class)
+    rng.ts                 seeded PRNG + hashing (deterministic decks)
+    daily.ts               deterministic daily-challenge deck from the date
+    duel.ts                challenge-code encode/decode, deck, bot, duel scoring
+    storage.ts             local-first stats persistence (guest = first-class)
+    store.ts               *** the GameStore interface + localStore (Phase 2 seam) ***
     __tests__/             vitest specs
 
   data/emails.ts           the 40+ authored, versioned seed dataset
 
   context/ThemeContext.tsx theme + light/dark, persisted, live-swapping
-  hooks/useGame.ts         game state, scoring, stats — the useGame hook
+  hooks/useGame.ts         solo/daily game state, scoring, stats
+  hooks/useDuel.ts         duel state (deck, bot, live score, rating)
   lib/                     format helpers + DOM highlight for evidence chips
   components/              InboxLayout, FolderRail, EmailList, ReadingPane,
+                           EmailMessage (shared realistic email + tools),
                            SenderDetails, HeaderPanel, LinkInspector, LinkStatusBar,
                            AttachmentChip, ClassificationBar, FeedbackPanel,
                            RoundSummary, GameSidebar, ThemeSwitcher, TopBar,
                            Onboarding, HintBubble, ShortcutsModal, StatsView, Avatar
+    components/duel/       DuelScreen, DuelLobby, DuelArena, DuelResult, DuelBar
 ```
 
-Game logic never imports React; UI never re-implements scoring. That split is what
-lets the same rules run later on a server for duels and leaderboards.
+Game logic never imports React; UI never re-implements scoring. That split — plus
+the single `GameStore` seam for all persistence — is what lets the same rules run
+later on a server for live duels and leaderboards.
 
 ---
 
@@ -191,11 +231,19 @@ In production this content moves into the database (`orgId | null`, `version`,
 - **Guest-first identity.** A player is a handle + an anonymous id in
   `localStorage` (`src/game/storage.ts`). Optional accounts (magic-link / OAuth) are
   meant only to persist and sync that same shape across devices — never a gate.
-- **Where the backend plugs in.** `useGame` currently reads the built-in dataset and
-  persists locally. Swap those two seams — the email source and `loadStats/saveStats`
-  — for API calls and the same UI drives a server-backed deployment. `evaluateAnswer`
-  and the round builder are already pure and server-safe for authoritative duel
-  scoring.
+- **The `GameStore` seam (the one thing Phase 2 swaps).** All persistence goes
+  through `src/game/store.ts` — a `GameStore` interface with a `localStore`
+  implementation. Phase 2 provides an `apiStore` implementing the same interface for
+  signed-in players and cross-device sync; `useGame`/`useDuel` and every component
+  are unchanged.
+- **Duels are already server-shaped.** A duel is fully described by a compact
+  **challenge code** (`v1-<seed>-<size>-<diff>`). `buildDuelDeck`, `simulateBot`, and
+  the duel scoring functions are pure and deterministic, so the exact same seed →
+  deck → score pipeline becomes authoritative server-side scoring for real-time
+  matchmaking in Phase 2 — only *who you race* changes, not the game.
+- **Determinism.** `rng.ts` (seeded mulberry32 + FNV-1a) powers both the daily
+  challenge (seeded by date) and duels (seeded by challenge code), guaranteeing every
+  player gets an identical set — a property the backend can trust and reproduce.
 
 ## Privacy, security & trust
 
