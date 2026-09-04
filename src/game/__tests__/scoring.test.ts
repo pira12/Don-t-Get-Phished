@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { evaluateAnswer, streakMultiplier, speedBonus, investigationBonus } from "../scoring";
+import { evaluateAnswer, streakMultiplier, speedBonus, investigationBonus, evaluateAction, actionOutcome } from "../scoring";
 import type { GameEmail } from "../types";
 
 const phishing: GameEmail = {
@@ -37,6 +37,47 @@ describe("speedBonus / investigationBonus", () => {
     expect(speedBonus(3000, true)).toBe(30);
     expect(speedBonus(30000, true)).toBe(0);
     expect(investigationBonus(5, true)).toBe(30);
+  });
+});
+
+describe("actionOutcome — report the phish, keep the safe mail", () => {
+  it("report on phishing is ideal; report on legit is a false positive", () => {
+    expect(actionOutcome("phishing", "report")).toMatchObject({ correct: true, quality: "ideal" });
+    expect(actionOutcome("legit", "report")).toMatchObject({ correct: false, quality: "wrong", falsePositive: true });
+  });
+  it("archive on legit is ideal; archive on phishing is a false negative", () => {
+    expect(actionOutcome("legit", "archive")).toMatchObject({ correct: true, quality: "ideal" });
+    expect(actionOutcome("phishing", "archive")).toMatchObject({ correct: false, quality: "wrong", falseNegative: true });
+  });
+  it("delete is correct-but-acceptable either way", () => {
+    expect(actionOutcome("phishing", "delete")).toMatchObject({ correct: true, quality: "acceptable" });
+    expect(actionOutcome("legit", "delete")).toMatchObject({ correct: true, quality: "acceptable" });
+  });
+});
+
+describe("evaluateAction scoring", () => {
+  const base = { elapsedMs: 30000, toolsUsed: 0, currentStreak: 0 };
+  it("rewards the ideal action more than deleting, and zero for wrong", () => {
+    const reported = evaluateAction({ email: phishing, action: "report", ...base });
+    const deleted = evaluateAction({ email: phishing, action: "delete", ...base });
+    const kept = evaluateAction({ email: phishing, action: "archive", ...base });
+    expect(reported.correct).toBe(true);
+    expect(reported.quality).toBe("ideal");
+    expect(reported.breakdown.actionBonus).toBe(25);
+    // delete is correct but worth about half, with no action bonus
+    expect(deleted.correct).toBe(true);
+    expect(deleted.quality).toBe("acceptable");
+    expect(deleted.points).toBeLessThan(reported.points);
+    // archiving a phish is wrong -> false negative, zero points
+    expect(kept.correct).toBe(false);
+    expect(kept.falseNegative).toBe(true);
+    expect(kept.points).toBe(0);
+  });
+
+  it("reporting a legit email is a false positive worth nothing", () => {
+    const r = evaluateAction({ email: legit, action: "report", ...base });
+    expect(r.correct).toBe(false);
+    expect(r.falsePositive).toBe(true);
   });
 });
 

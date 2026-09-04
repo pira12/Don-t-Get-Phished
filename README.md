@@ -63,7 +63,7 @@ Other scripts:
 
 ```bash
 npm run lint           # eslint (next/core-web-vitals)
-npm run test           # 64 unit tests (game logic incl. Elo + server:
+npm run test           # 69 unit tests (game logic incl. Elo + server:
                        #   leaderboard, assignments, content, reports, import) (vitest)
 ```
 
@@ -95,7 +95,14 @@ is complete and runnable:
     URL, fictional domain age, and whether the link domain matches the sender.
   - **Attachment inspector** → flags double extensions (`invoice.pdf.htm`),
     macro-enabled docs (`.docm`), etc.
-- **Classification** with a Gmail-style action bar and **`P` / `L`** shortcuts.
+- **Real Gmail/Outlook actions** for muscle memory — instead of an abstract
+  "phishing/legit" toggle, you take the *actual* actions you'd use in your own inbox:
+  **Report** (toolbar "Report ▾" → phishing/junk, the ⋮ menu, or the action bar),
+  **Archive** (keep — it's safe), or **Delete** — with the real client keys
+  **`!` report · `E` archive · `#` delete**. Scoring is graded to teach the right
+  habit: **report the phish / keep the safe mail** earns the most (a report/keep
+  action bonus); **Delete** is correct-but-suboptimal (~half points, with coaching);
+  reporting real mail is a false positive and archiving a phish is a false negative.
 - **Educational feedback**: verdict banner, ground truth, and **clickable evidence
   chips** that scroll to and flash the exact spoofed domain / urgency phrase / SPF
   fail in the message. Legit emails show the reassuring signals instead.
@@ -132,7 +139,7 @@ is complete and runnable:
   deeper) with Back/Next, progress, keyboard nav, and small inline visuals; replay it
   any time from the account menu ("How to play", `/?intro=1`). Plus a one-time
   contextual **hint bubble** and a **keyboard shortcuts** modal (`?`).
-- **Accessibility**: full keyboard play (`P`/`L`/`Enter`/`↑`/`↓`/`H`/`S`/`?`),
+- **Accessibility**: full keyboard play (`!`/`E`/`#` real-client actions, `Enter`/`↑`/`↓`/`H`/`S`/`?`),
   visible focus states, ARIA roles/labels, and `prefers-reduced-motion` support.
 - **40+ authored emails** across easy/medium/hard, balanced phishing/legit, covering
   every technique in the brief.

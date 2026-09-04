@@ -5,23 +5,26 @@ import { CheckCircle2, XCircle, ArrowRight, Search, ShieldAlert } from "lucide-r
 import { motion } from "framer-motion";
 import type { GameEmail, RedFlag } from "@/game/types";
 import { TECHNIQUE_LABELS } from "@/game/types";
-import type { AnswerResult } from "@/game/scoring";
+import type { AnswerResult, MailAction } from "@/game/scoring";
 
 export function FeedbackPanel({
   email,
   result,
+  action,
   isLast,
   onJump,
   onNext,
 }: {
   email: GameEmail;
   result: AnswerResult;
+  action: MailAction;
   isLast: boolean;
   onJump: (flag: RedFlag) => void;
   onNext: () => void;
 }) {
   const correct = result.correct;
   const truthLabel = email.truth === "phishing" ? "Phishing" : "Legitimate";
+  const note = actionNote(email.truth, action, result.quality);
 
   return (
     <motion.section
@@ -31,34 +34,34 @@ export function FeedbackPanel({
       aria-label="Feedback"
       className="border-t-2 border-border bg-surface-2"
     >
-      <div
-        className={[
-          "flex items-center gap-3 px-4 py-3 md:px-6",
-          correct ? "bg-success-soft" : "bg-danger-soft",
-        ].join(" ")}
-      >
-        {correct ? (
-          <CheckCircle2 className="text-success" aria-hidden />
-        ) : (
-          <XCircle className="text-danger" aria-hidden />
-        )}
-        <div className="flex-1">
-          <p className={["font-semibold", correct ? "text-success" : "text-danger"].join(" ")}>
-            {correct ? "Correct!" : "Not quite."}
-          </p>
-          <p className="text-sm text-ink-muted">
-            This email was <strong>{truthLabel}</strong>.
-            {!correct && result.falsePositive && " You over-flagged a safe message (a false positive)."}
-            {!correct && result.falseNegative && " You missed a phishing attempt (a false negative)."}
-          </p>
-        </div>
-        {correct && (
-          <div className="text-right">
-            <div className="text-lg font-bold text-success">+{result.points}</div>
-            <div className="text-[11px] text-ink-muted">streak ×{result.newStreak}</div>
+      {(() => {
+        const acceptable = correct && result.quality === "acceptable";
+        const tone = !correct ? "danger" : acceptable ? "warning" : "success";
+        const bg = tone === "danger" ? "bg-danger-soft" : tone === "warning" ? "bg-warning-soft" : "bg-success-soft";
+        const fg = tone === "danger" ? "text-danger" : tone === "warning" ? "text-[color:var(--warning)]" : "text-success";
+        const headline = !correct ? "Not quite." : acceptable ? "Good instinct — but not the best move." : "Correct!";
+        return (
+          <div className={["flex items-center gap-3 px-4 py-3 md:px-6", bg].join(" ")}>
+            {correct ? (
+              <CheckCircle2 className={fg} aria-hidden />
+            ) : (
+              <XCircle className="text-danger" aria-hidden />
+            )}
+            <div className="flex-1">
+              <p className={["font-semibold", fg].join(" ")}>{headline}</p>
+              <p className="text-sm text-ink-muted">
+                This email was <strong>{truthLabel}</strong>. {note}
+              </p>
+            </div>
+            {correct && (
+              <div className="text-right">
+                <div className={["text-lg font-bold", fg].join(" ")}>+{result.points}</div>
+                <div className="text-[11px] text-ink-muted">streak ×{result.newStreak}</div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        );
+      })()}
 
       <div className="px-4 py-4 md:px-6">
         {email.truth === "phishing" ? (
@@ -135,6 +138,19 @@ export function FeedbackPanel({
       </div>
     </motion.section>
   );
+}
+
+/** Coaching sentence that teaches the ideal real-world action. */
+function actionNote(truth: GameEmail["truth"], action: MailAction, quality?: AnswerResult["quality"]): string {
+  if (truth === "phishing") {
+    if (action === "report") return "You reported it — exactly right. That removes the threat and helps filters protect everyone else.";
+    if (action === "delete") return "Right instinct, but you only deleted it. Reporting phishing is better — it trains the filters and warns your team. (Half points.)";
+    return "You archived a phishing email — it would have stayed in your inbox, looking trusted. Report phishing instead.";
+  }
+  // legit
+  if (action === "archive") return "You kept it — correct. It's a genuine message, so leaving it in your inbox is right.";
+  if (action === "delete") return "This was a real message. Deleting works, but you could have kept it. (Half points.)";
+  return "You reported a legitimate email. Over-reporting buries real mail and erodes trust in the report button.";
 }
 
 /** Would clicking this have led to a credential-entry page? */

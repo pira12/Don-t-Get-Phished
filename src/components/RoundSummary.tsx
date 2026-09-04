@@ -15,6 +15,12 @@ const NEXT_DIFFICULTY: Record<Difficulty, Difficulty | "mixed"> = {
   hard: "mixed",
 };
 
+const ACTION_PAST: Record<"report" | "archive" | "delete", string> = {
+  report: "reported it",
+  archive: "kept it",
+  delete: "deleted it",
+};
+
 export function RoundSummary({ game }: { game: UseGame }) {
   const { answered, roundScore, config, startRound, finalizeRound } = game;
   const answers = useMemo(() => Object.values(answered), [answered]);
@@ -148,7 +154,7 @@ export function RoundSummary({ game }: { game: UseGame }) {
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm text-ink">{a.email.subject}</div>
                 <div className="text-xs text-ink-faint">
-                  {a.email.from.name} · truth: <strong>{a.email.truth}</strong> · you said {a.verdict}
+                  {a.email.from.name} · truth: <strong>{a.email.truth}</strong> · you {ACTION_PAST[a.action]}
                 </div>
               </div>
             </li>

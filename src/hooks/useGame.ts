@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EMAILS } from "@/data/emails";
-import { evaluateAnswer, type AnswerResult } from "@/game/scoring";
+import { evaluateAction, type AnswerResult, type MailAction } from "@/game/scoring";
 import { buildRound, type RoundOptions } from "@/game/rounds";
 import { levelForXp, tierForLevel } from "@/game/xp";
 import { EMPTY_STATS, updateDailyStreak, type LifetimeStats } from "@/game/storage";
 import { store } from "@/game/store";
 import { buildDailyDeck, todayKey, type DailyResult } from "@/game/daily";
-import type { GameEmail, RedFlagType, Verdict } from "@/game/types";
+import type { GameEmail, RedFlagType } from "@/game/types";
 
 // Persistence flows through the GameStore seam (Phase 2 swaps it for an API).
 const loadStats = () => store.loadStats();
@@ -23,7 +23,7 @@ export type ToolName =
 
 export type PerEmailFeedback = {
   email: GameEmail;
-  verdict: Verdict;
+  action: MailAction;
   result: AnswerResult;
   usedHeaders: boolean;
 };
@@ -136,7 +136,7 @@ export function useGame() {
   );
 
   const answer = useCallback(
-    (verdict: Verdict): AnswerResult | undefined => {
+    (action: MailAction): AnswerResult | undefined => {
       const email = state.deck[state.index];
       if (!email || state.answered[email.id]) return undefined;
 
@@ -144,9 +144,9 @@ export function useGame() {
       const tools = toolsThisEmailRef.current;
       const usedHeaders = tools.has("headers");
 
-      const result = evaluateAnswer({
+      const result = evaluateAction({
         email,
-        verdict,
+        action,
         elapsedMs,
         toolsUsed: tools.size,
         currentStreak: state.streak,
@@ -157,7 +157,7 @@ export function useGame() {
         ...s,
         answered: {
           ...s.answered,
-          [email.id]: { email, verdict, result, usedHeaders },
+          [email.id]: { email, action, result, usedHeaders },
         },
         roundScore: s.roundScore + result.points,
         streak: result.newStreak,

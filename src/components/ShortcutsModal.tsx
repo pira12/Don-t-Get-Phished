@@ -3,8 +3,9 @@
 import { X } from "lucide-react";
 
 const SHORTCUTS: [string, string][] = [
-  ["P", "Report as phishing"],
-  ["L", "Mark as legitimate"],
+  ["!", "Report phishing (same key as Gmail)"],
+  ["E", "Archive — it looks safe (Gmail archive)"],
+  ["#", "Delete (Gmail delete)"],
   ["Enter", "Next email / continue"],
   ["↑ / ↓", "Move through the email list"],
   ["H", "Show original (headers)"],

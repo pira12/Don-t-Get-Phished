@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, CalendarCheck, Swords, GraduationCap } from "lucide-react";
-import type { Difficulty, RedFlagType, Verdict } from "@/game/types";
+import type { Difficulty, RedFlagType } from "@/game/types";
+import type { MailAction } from "@/game/scoring";
 import { store } from "@/game/store";
 import { todayKey } from "@/game/daily";
 import { useSession } from "@/net/session";
@@ -105,10 +106,10 @@ export function InboxLayout() {
   const onTool = game.recordTool;
 
   const answerAndAdvance = useCallback(
-    (v: Verdict) => {
+    (a: MailAction) => {
       const g = stateRef.current.game;
       if (!g.currentEmail || g.currentFeedback) return;
-      g.answer(v);
+      g.answer(a);
     },
     [],
   );
@@ -134,14 +135,21 @@ export function InboxLayout() {
       if (s.inSummary) return;
 
       const g = s.game;
+      // Real-client actions: ! report · E archive · # delete (P/L kept as aliases).
+      if (e.key === "!" || e.key === "#") {
+        e.preventDefault();
+        answerAndAdvance(e.key === "!" ? "report" : "delete");
+        return;
+      }
       switch (e.key.toLowerCase()) {
         case "p":
           e.preventDefault();
-          answerAndAdvance("phishing");
+          answerAndAdvance("report");
           break;
+        case "e":
         case "l":
           e.preventDefault();
-          answerAndAdvance("legit");
+          answerAndAdvance("archive");
           break;
         case "enter":
           if (g.currentFeedback) {
@@ -323,7 +331,7 @@ export function InboxLayout() {
                       email={currentEmail}
                       feedback={game.currentFeedback}
                       isLast={game.index === game.deck.length - 1}
-                      onAnswer={(v) => game.answer(v)}
+                      onAction={(a) => game.answer(a)}
                       onNext={game.next}
                       onTool={onTool}
                       onHoverLink={setHoverHref}

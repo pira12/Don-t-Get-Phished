@@ -80,20 +80,25 @@ const STEPS: Step[] = [
   },
   {
     icon: MessageSquareWarning,
-    title: "Make the call",
+    title: "Take the real action",
     body: (
       <>
-        Use the action bar under each email — or the keyboard. <strong>Over-flagging safe mail counts
-        against you</strong>, so don&apos;t report everything: real analysts stay calm.
+        You act exactly like in Gmail/Outlook, so the habit sticks: <strong>Report</strong> a phish,{" "}
+        <strong>Archive</strong> mail that&apos;s safe, or <strong>Delete</strong>. Reporting the phish
+        and keeping the safe mail earns the most — deleting works but is weaker, and reporting real
+        mail counts against you.
       </>
     ),
     visual: (
-      <div className="flex items-center justify-center gap-3">
-        <span className="inline-flex items-center gap-2 rounded-full border border-danger/50 bg-danger-soft px-3 py-1.5 text-xs font-semibold text-danger">
-          Report phishing <kbd className="rounded border border-danger/40 px-1.5 text-[10px]">P</kbd>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-danger/50 bg-danger-soft px-3 py-1.5 text-xs font-semibold text-danger">
+          Report <kbd className="rounded border border-danger/40 px-1.5 text-[10px]">!</kbd>
         </span>
-        <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-xs font-semibold text-ink">
-          Looks legitimate <kbd className="rounded border border-border px-1.5 text-[10px]">L</kbd>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-xs font-semibold text-ink">
+          Archive <kbd className="rounded border border-border px-1.5 text-[10px]">E</kbd>
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-ink-muted">
+          Delete <kbd className="rounded border border-border px-1.5 text-[10px]">#</kbd>
         </span>
       </div>
     ),
