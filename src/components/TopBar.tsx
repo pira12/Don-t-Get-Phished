@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ShieldCheck, Menu, BarChart3, Keyboard, Trophy, GraduationCap } from "lucide-react";
+import { Search, ShieldCheck, Menu, BarChart3, Keyboard, Trophy, GraduationCap, Radar } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { AccountMenu } from "./AccountMenu";
 
@@ -50,6 +50,14 @@ export function TopBar({
         >
           <Keyboard size={16} />
         </button>
+        <Link
+          href="/train"
+          aria-label="Practice all channels"
+          title="Practice: SMS, calls, chat, QR & web"
+          className="hidden rounded-full border border-border p-2 text-ink-muted hover:bg-[var(--row-hover)] sm:block"
+        >
+          <Radar size={16} />
+        </Link>
         <Link
           href="/stats"
           aria-label="Your stats"
