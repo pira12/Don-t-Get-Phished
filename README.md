@@ -63,7 +63,7 @@ Other scripts:
 
 ```bash
 npm run lint           # eslint (next/core-web-vitals)
-npm run test           # 61 unit tests (game logic incl. Elo + server:
+npm run test           # 64 unit tests (game logic incl. Elo + server:
                        #   leaderboard, assignments, content, reports, import) (vitest)
 ```
 
@@ -116,6 +116,15 @@ is complete and runnable:
   compare scores locally. Live versus-bar (opponent progress, per-email timer),
   correctness-first scoring where a wrong call costs more than a slow-but-right one,
   a local rating/record, and a **post-match side-by-side review** of every email.
+- **The Aftermath** (`/aftermath`): an interactive, clearly-labelled simulation of
+  what happens *after* a click — a neutral, **inert** fake login (nothing typed is
+  ever sent, stored, or transmitted) flips into an attacker's-console reveal of the
+  captured credentials, then a step-by-step 24-hour damage timeline (mail-rule,
+  password resets, MFA fatigue, invoice fraud, data exfiltration, spreading to
+  contacts, ransomware), an impact summary with illustrative figures (FBI IC3 / IBM /
+  Verizon DBIR / FTC), and a defensive turnaround. It's linked from the Learn page and
+  surfaced right when a player *misses* a credential-harvest phish ("You would have
+  clicked — see what a real attacker does next").
 - **Personal stats** page: lifetime accuracy, best streak, tier/level, a
   **technique-by-technique heatmap**, FP/FN distribution, and a **badge gallery**.
 - **Onboarding** (3 skippable cards), a one-time contextual **hint bubble**, and a
@@ -200,6 +209,8 @@ src/
   hooks/useOnlineDuel.ts   online duel: matchmaking + live race via the API
   lib/                     format helpers + DOM highlight for evidence chips
   components/LearnView.tsx real anti-phishing tools + the spot-the-phish checklist
+  components/AftermathSim.tsx  "The Aftermath" attacker's-side consequence sim
+  data/aftermath.ts        scenarios + illustrative impact figures for the sim
   components/online/       LeaderboardView, OrgsView, AdminView, ContentAdmin,
                            AssignmentsAdmin, ReportsAdmin, PrintReport, PageShell
   components/              InboxLayout, FolderRail, EmailList, ReadingPane,

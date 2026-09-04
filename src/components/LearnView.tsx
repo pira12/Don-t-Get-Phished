@@ -10,6 +10,7 @@ import {
   KeyRound,
   BookOpen,
   ShieldCheck,
+  ShieldAlert,
   Lightbulb,
 } from "lucide-react";
 
@@ -102,6 +103,21 @@ export function LearnView() {
         </h1>
         <span />
       </div>
+
+      {/* Attacker's-side simulation — the emotional hook */}
+      <Link
+        href="/aftermath"
+        className="mb-6 flex items-center gap-4 rounded-2xl border border-danger/40 bg-danger-soft p-5 transition hover:brightness-[0.98]"
+      >
+        <ShieldAlert size={28} className="shrink-0 text-danger" />
+        <div className="flex-1">
+          <div className="text-base font-semibold text-ink">See it from the attacker&apos;s side →</div>
+          <div className="text-sm text-ink-muted">
+            Walk through exactly what a criminal does after one click and a typed password — and how
+            severe the aftermath really gets. A safe, 60-second simulation.
+          </div>
+        </div>
+      </Link>
 
       {/* Spot-the-phish checklist */}
       <section className="mb-6 rounded-2xl border border-accent/30 bg-accent-soft p-5">

@@ -1,6 +1,7 @@
 "use client";
 
-import { CheckCircle2, XCircle, ArrowRight, Search } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, XCircle, ArrowRight, Search, ShieldAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import type { GameEmail, RedFlag } from "@/game/types";
 import { TECHNIQUE_LABELS } from "@/game/types";
@@ -104,6 +105,25 @@ export function FeedbackPanel({
           </>
         )}
 
+        {/* Missed a credential-harvest phish? Show the real-world cost from the
+            attacker's side — the most memorable teaching moment. */}
+        {!correct && email.truth === "phishing" && missedCredHarvest(email) && (
+          <Link
+            href={`/aftermath?scenario=${aftermathScenarioFor(email)}`}
+            className="mt-3 flex items-center gap-3 rounded-client border border-danger/40 bg-danger-soft px-3 py-2.5 text-left transition hover:brightness-95"
+          >
+            <ShieldAlert size={20} className="shrink-0 text-danger" aria-hidden />
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-danger">
+                You would have clicked. See what a real attacker does next →
+              </span>
+              <span className="block text-xs text-ink-muted">
+                A 60-second walkthrough of the aftermath — and how one habit stops all of it.
+              </span>
+            </span>
+          </Link>
+        )}
+
         <button
           type="button"
           onClick={onNext}
@@ -115,4 +135,17 @@ export function FeedbackPanel({
       </div>
     </motion.section>
   );
+}
+
+/** Would clicking this have led to a credential-entry page? */
+function missedCredHarvest(email: GameEmail): boolean {
+  const tags = email.techniqueTags ?? [];
+  return tags.includes("credential_harvest_link") || tags.includes("lookalike_domain") || tags.includes("attachment_lure");
+}
+
+/** Pick the aftermath scenario that best fits the email's pretext. */
+function aftermathScenarioFor(email: GameEmail): string {
+  const hay = `${email.subject} ${email.from.name} ${email.from.address}`.toLowerCase();
+  if (/(bank|payment|card|invoice|transaction|billing|salary|payroll|deposit)/.test(hay)) return "bank";
+  return "work-email";
 }
