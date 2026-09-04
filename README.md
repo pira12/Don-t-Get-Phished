@@ -127,8 +127,11 @@ is complete and runnable:
   clicked — see what a real attacker does next").
 - **Personal stats** page: lifetime accuracy, best streak, tier/level, a
   **technique-by-technique heatmap**, FP/FN distribution, and a **badge gallery**.
-- **Onboarding** (3 skippable cards), a one-time contextual **hint bubble**, and a
-  **keyboard shortcuts** modal (`?`).
+- **Onboarding wizard** — a skippable, replayable "How to play" walkthrough (goal →
+  layout → the forensic tools → how to decide → feedback/scoring → compete → go
+  deeper) with Back/Next, progress, keyboard nav, and small inline visuals; replay it
+  any time from the account menu ("How to play", `/?intro=1`). Plus a one-time
+  contextual **hint bubble** and a **keyboard shortcuts** modal (`?`).
 - **Accessibility**: full keyboard play (`P`/`L`/`Enter`/`↑`/`↓`/`H`/`S`/`?`),
   visible focus states, ARIA roles/labels, and `prefers-reduced-motion` support.
 - **40+ authored emails** across easy/medium/hard, balanced phishing/legit, covering

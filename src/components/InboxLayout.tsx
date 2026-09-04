@@ -82,9 +82,16 @@ export function InboxLayout() {
     setHoverHref(null);
   }, [currentId]);
 
-  // First-visit onboarding.
+  // First-visit onboarding — or a replay via ?intro=1 (from the "How to play" menu).
   useEffect(() => {
-    if (!hasOnboarded()) setOnboarding(true);
+    const params = new URLSearchParams(window.location.search);
+    const replay = params.get("intro") === "1";
+    if (replay || !hasOnboarded()) setOnboarding(true);
+    if (replay) {
+      params.delete("intro");
+      const qs = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    }
     setHandleDraft(game.stats.handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { LogOut, BarChart3, Shield, ChevronDown, Building2, Cloud, CloudOff, GraduationCap } from "lucide-react";
+import { LogOut, BarChart3, Shield, ChevronDown, Building2, Cloud, CloudOff, GraduationCap, HelpCircle } from "lucide-react";
 import { useSession } from "@/net/session";
 import { Avatar } from "./Avatar";
 
@@ -190,6 +190,15 @@ export function AccountMenu({ handle }: { handle: string }) {
           )}
 
           <div className="mt-2 border-t border-border pt-2">
+            <button
+              onClick={() => {
+                setOpen(false);
+                window.location.assign("/?intro=1");
+              }}
+              className="flex w-full items-center gap-2 rounded-client px-2 py-1.5 text-left text-ink hover:bg-[var(--row-hover)]"
+            >
+              <HelpCircle size={15} /> How to play
+            </button>
             <MenuLink href="/learn" icon={<GraduationCap size={15} />} label="Learn & tools" onClick={() => setOpen(false)} />
           </div>
         </div>
