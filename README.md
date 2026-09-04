@@ -75,6 +75,32 @@ Requires Node 18.18+ (developed on Node 22; see `.nvmrc`).
 
 ---
 
+## Beyond email — every channel (`/train`)
+
+Phishing isn't only email, so the training isn't either. A channel-agnostic
+scenario framework powers four more realistic surfaces, all feeding the **same
+score, XP and stats** as the inbox:
+
+| Channel | Surface | Teaches |
+| --- | --- | --- |
+| **SMS / smishing** | Phone Messages app | Fake delivery/bank/refund texts, OTP theft, MFA-fatigue, short links |
+| **Voice / vishing** | Incoming call & voicemail | Bank "fraud team", fake IT remote-access, robocall threats, CEO voice-cloning |
+| **Chat / DM** | Slack, Teams, WhatsApp, LinkedIn | Exec gift-card fraud, IT reset lures, job scams, "hi mum" new-number |
+| **QR & web** | QR scan → browser | Quishing (parking/delivery), fake login pages — read the real address bar |
+
+Each surface has channel-appropriate **investigation tools** (reveal a link's true
+destination, caller-ID caveats, a sender's real handle, the true registrable
+domain) and the same three real-world actions the email game scores. The flow: a
+**channel switcher** plus a **Mixed** round that changes channel every scenario —
+the realistic cross-channel vigilance drill. Reached from the top-bar radar icon,
+the Learn page, and the email round summary.
+
+The engine only ever reads `truth` / `difficulty` / `techniqueTags`, so scoring, XP
+and the weakness heatmap work across every channel with no special-casing
+(`src/game/channels.ts`, `src/hooks/useScenarioGame.ts`, `src/data/*`).
+
+---
+
 ## What's implemented
 
 The **core training experience** — the ~90% of the product players actually touch —

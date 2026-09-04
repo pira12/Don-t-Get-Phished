@@ -15,6 +15,7 @@ import {
   ChevronDown,
   FileSearch,
   Paperclip,
+  Radar,
   type LucideIcon,
 } from "lucide-react";
 
@@ -146,6 +147,18 @@ const STEPS: Step[] = [
           XP
         </span>
       </div>
+    ),
+  },
+  {
+    icon: Radar,
+    title: "Phishing isn't only email",
+    body: (
+      <>
+        Attackers also use <strong>text messages, phone calls, chat &amp; DMs, and QR codes</strong>.
+        The <strong>Practice</strong> page (radar icon, top-right) drills the same spot-it habit across
+        every channel — or take a <strong>Mixed</strong> round that switches channel each time. It all
+        feeds one score and your stats.
+      </>
     ),
   },
   {

@@ -12,6 +12,11 @@ import {
   ShieldCheck,
   ShieldAlert,
   Lightbulb,
+  Radar,
+  MessageSquare,
+  Phone,
+  MessagesSquare,
+  QrCode,
 } from "lucide-react";
 
 /**
@@ -118,6 +123,34 @@ export function LearnView() {
           </div>
         </div>
       </Link>
+
+      {/* Multi-channel practice */}
+      <section className="mb-6 rounded-2xl border border-border bg-surface p-5">
+        <h2 className="mb-1 inline-flex items-center gap-2 text-sm font-semibold text-ink">
+          <Radar size={16} className="text-accent" /> Practice every channel
+        </h2>
+        <p className="mb-3 text-sm text-ink-muted">
+          Social engineering isn&apos;t only email. Drill the same investigate → decide → act habit on
+          the other channels attackers use — or take a Mixed round that switches each time.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { c: "sms", label: "SMS / smishing", icon: <MessageSquare size={14} /> },
+            { c: "call", label: "Calls / vishing", icon: <Phone size={14} /> },
+            { c: "chat", label: "Chat / DMs", icon: <MessagesSquare size={14} /> },
+            { c: "web", label: "QR & fake logins", icon: <QrCode size={14} /> },
+            { c: "mixed", label: "Mixed round", icon: <Radar size={14} /> },
+          ].map((x) => (
+            <Link
+              key={x.c}
+              href={`/train?c=${x.c}`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-xs font-medium text-ink transition hover:border-accent"
+            >
+              {x.icon} {x.label}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* Spot-the-phish checklist */}
       <section className="mb-6 rounded-2xl border border-accent/30 bg-accent-soft p-5">

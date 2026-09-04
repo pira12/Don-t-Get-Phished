@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CheckCircle2, XCircle, RefreshCw, TrendingUp, BarChart3 } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, TrendingUp, BarChart3, Radar } from "lucide-react";
 import type { UseGame } from "@/hooks/useGame";
 import type { Difficulty, RedFlagType } from "@/game/types";
 import { TECHNIQUE_LABELS } from "@/game/types";
@@ -196,6 +196,21 @@ export function RoundSummary({ game }: { game: UseGame }) {
           <BarChart3 size={15} /> View stats
         </Link>
       </div>
+
+      <Link
+        href="/train"
+        className="mt-5 flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-left transition hover:border-accent"
+      >
+        <Radar size={20} className="shrink-0 text-accent" aria-hidden />
+        <span className="flex-1">
+          <span className="block text-sm font-semibold text-ink">
+            Phishing isn&apos;t only email — practise every channel →
+          </span>
+          <span className="block text-xs text-ink-muted">
+            SMS, phone calls, chat &amp; DMs, QR codes and fake logins. Same habit, one score.
+          </span>
+        </span>
+      </Link>
     </div>
   );
 }
