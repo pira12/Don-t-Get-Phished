@@ -14,61 +14,64 @@ never blocked by an account.
 > All emails are **fictional and AI-generated for education only**. Company and
 > product names are invented for realism and do not represent real organisations.
 
-## Built in two phases
+## A hosted service, free for individuals
 
-- **Phase 1 — offline-first game.** Everything runs in the browser with progress in
-  `localStorage`: the realistic inbox and all forensic tools, solo rounds and
-  difficulty progression, local gamification (XP/levels/tiers/streaks/badges), a
-  **deterministic daily challenge** (same for everyone on a date), personal stats,
-  and **offline/async duels** — a shareable challenge link + tunable bot. Works with
-  no backend and no login.
-- **Phase 2 — the hosted backend (in this build).** Adds, as an **additive sync
-  overlay** on top of the offline-first game: optional **magic-link accounts** with
-  **guest-progress adoption** and cross-device merge; live **global / org
-  leaderboards** (ranked by accuracy-scaled score); **orgs via join code**; and an
-  **admin dashboard** with a weakness heatmap, per-member drill-down, and audit log.
-  It self-hosts **free with no database** (a file-backed store) and offers a
-  **Postgres** path for enterprises who want to own their data. See
-  [Backend & self-hosting](#backend--self-hosting).
-- **Phase 2b (remaining roadmap).** Real-time 1v1 matchmaking over websockets,
-  seasons/tournaments/company challenges, SSO/SCIM, and webhooks/Slack. The seams
-  for these are in place (see Architecture).
+Don't Get Phished is a **hosted SaaS**, not a self-hosted app. It runs on
+**Supabase** (Postgres + Auth + email) and is layered so play never depends on the
+backend:
 
-The whole point of the split: **online features never gate play.** If the backend
-is unreachable (or you deploy frontend-only), the UI silently drops to guest mode
-and solo play, the daily challenge, and duels keep working.
+- **Free forever for individuals.** Anyone can play instantly with no login — the
+  realistic inbox and all forensic tools, solo rounds and difficulty progression,
+  local gamification (XP/levels/tiers/streaks/badges), a **deterministic daily
+  challenge**, personal stats, and **offline/async duels**. Progress lives in
+  `localStorage`; a free **email account** (one-time code, via Supabase Auth) adds
+  cross-device sync and a reserved handle.
+- **Teams & Enterprise (paid).** Orgs get a join code, live **global / org
+  leaderboards**, and an **admin dashboard** (weakness heatmap, per-member
+  drill-down, audit log). Paid tiers unlock custom scenario content, training
+  assignments, compliance exports, and — for enterprise — SSO, branding, an API,
+  and higher limits. Tiers are enforced in one place (`src/server/plan.ts`).
+- **Roadmap.** Real-time 1v1 matchmaking at scale (Redis-backed), seasons /
+  tournaments / company challenges, SCIM, and webhooks/Slack. The seams are in
+  place (see Architecture).
+
+**Online features never gate play.** If the backend is unreachable, the UI silently
+drops to guest mode and solo play, the daily challenge, and duels keep working.
+
+> **Monetization.** Individual play is free (top-of-funnel + goodwill). Revenue
+> comes from **per-seat Team/Enterprise subscriptions** with customization and
+> compliance features; natural add-ons are a **managed phishing-simulation campaign
+> service** for enterprises and **content/curriculum packs**.
 
 ---
 
-## Quick start
+## Quick start (local development)
 
 ```bash
 npm install
 npm run dev            # http://localhost:3000
 ```
 
-That's it — the game plays immediately as a guest, and the backend runs against a
-**local file store** (`./.data/izd-db.json`) with **no database to set up**. Sign in
-from the account menu (top-right); in dev the magic-link code is returned inline so
-the flow is fully usable without an email provider.
+The game plays immediately as a guest. With **no `.env`**, the backend runs against
+a **zero-dependency local file store** (`./.data/izd-db.json`) and a **dev
+magic-link** whose code is returned inline — so accounts, orgs, and leaderboards are
+fully usable locally **without Supabase or any email provider**. This fallback is
+for development and CI only; production always runs on Supabase.
 
-Production (free, self-hosted, no database):
-
-```bash
-npm run build
-npm run start          # Node server with the backend on, data in ./.data
-```
+To develop against **real Supabase**, copy `.env.example` to `.env.local`, fill in
+your project's keys, and apply the schema in `supabase/migrations/` — see
+[Backend & deployment](#backend--deployment).
 
 Other scripts:
 
 ```bash
+npm run build          # production build
+npm run start          # run the production server
 npm run lint           # eslint (next/core-web-vitals)
-npm run test           # 69 unit tests (game logic incl. Elo + server:
-                       #   leaderboard, assignments, content, reports, import) (vitest)
+npm run test           # 69 unit tests (vitest)
 ```
 
-Requires Node 18.18+ (developed on Node 22). For the enterprise Postgres path and
-Docker, see [Backend & self-hosting](#backend--self-hosting).
+Requires Node 18.18+ (developed on Node 22; see `.nvmrc`).
 
 ---
 
@@ -144,10 +147,10 @@ is complete and runnable:
 - **40+ authored emails** across easy/medium/hard, balanced phishing/legit, covering
   every technique in the brief.
 
-### Phase 2 status
+### Backend status
 
-**Built in this repo** (see [Backend & self-hosting](#backend--self-hosting)):
-optional magic-link accounts with guest-progress adoption + cross-device sync; REST
+**Built in this repo** (see [Backend & deployment](#backend--deployment)):
+email-based accounts (Supabase Auth, one-time code) with guest-progress adoption + cross-device sync; REST
 API; global/org leaderboards (weekly/seasonal/all-time); orgs via join code; an
 admin dashboard (overview, weakness heatmap, per-member drill-down, audit log); a
 **custom-content editor** (author org-specific scenario emails with a live preview
@@ -158,13 +161,15 @@ completion tracked from rounds and surfaced to players in the inbox);
 technique coverage and an audit log as CSV, plus a printable PDF summary); and
 **real-time online 1v1 matchmaking** (get matched with another live player, race the
 same seeded deck with server-authoritative scoring and Elo, with the bot as an
-offline fallback). A file-backed free datastore and a committed Postgres/Docker path.
+offline fallback). Runs on **Supabase** (Postgres + Auth + email) in production,
+with a zero-dependency file store for local dev / CI.
 
-**Remaining (Phase 2b)** — the seams are in place:
+**Remaining roadmap** — the seams are in place:
 
 - Seasons, tournaments, company challenges (round events + timeframe windows are
   already the substrate).
-- SSO/SCIM, webhooks/SIEM/LMS, Slack/Teams hooks.
+- Plan-based billing (Stripe) wired to `src/server/plan.ts`; SSO/SCIM,
+  webhooks/SIEM/LMS, Slack/Teams hooks (enterprise tier).
 - Multi-node matchmaking: the live-match hub is in-memory (correct for one node);
   moving it to Redis is the only change for horizontal scale.
 
@@ -190,16 +195,20 @@ src/
     daily.ts               deterministic daily-challenge deck from the date
     duel.ts                challenge-code encode/decode, deck, bot, duel scoring
     storage.ts             local-first stats persistence (guest = first-class)
-    store.ts               *** the GameStore interface + localStore (Phase 2 seam) ***
+    store.ts               *** the GameStore interface + localStore (persistence seam) ***
     __tests__/             vitest specs
 
   data/emails.ts           the 40+ authored, versioned seed dataset
 
-  server/                  BACKEND (Phase 2) — the Repository seam + pure logic
+  server/                  BACKEND — the Repository seam + pure logic
     repository.ts          the datastore interface (one seam for all persistence)
-    jsonRepository.ts      default file-backed store (free, zero-dependency)
-    db.ts                  driver selection (json | prisma)
-    auth.ts                HMAC session cookies + magic-link tokens
+    supabaseRepository.ts  production store (Supabase / Postgres)
+    jsonRepository.ts      local dev / CI store (file-backed, zero-dependency)
+    supabase.ts            Supabase client factories (auth + service role)
+    config.ts              env-driven driver + auth-provider selection
+    plan.ts                plan-based feature gating (free / team / enterprise)
+    db.ts                  driver selection (supabase | json)
+    auth.ts                Supabase Auth in prod; dev magic-link fallback
     leaderboard.ts         PURE ranking / timeframe / weakness-heatmap (tested)
     assignments.ts         PURE assignment-completion logic (tested)
     content.ts             PURE email validation + HTML sanitisation (tested)
@@ -237,8 +246,8 @@ app/api/                   route handlers: auth/*, sync, rounds, leaderboard,
                            orgs, orgs/join, content, assignments, duel/* (queue +
                            match answer/forfeit), admin/overview, admin/content*,
                            admin/assignments*, admin/report
-prisma/schema.prisma       enterprise Postgres target (mirrors the Repository)
-docker-compose.yml         app + Postgres + Redis stack
+middleware.ts              security headers (CSP, HSTS, frame-ancestors, …)
+supabase/migrations/       Postgres schema + RLS policies
 ```
 
 Game logic never imports React; UI never re-implements scoring. That split — plus
@@ -247,27 +256,40 @@ later on a server for live duels and leaderboards.
 
 ---
 
-## Backend & self-hosting
+## Backend & deployment
 
-The backend is **optional and offline-first**. It self-hosts three ways:
+Production runs on **Supabase** (Postgres + Auth + email). Both datastore drivers
+implement the **same `Repository` interface** (`src/server/repository.ts`), and the
+active driver + auth provider are selected automatically from the environment
+(`src/server/config.ts`):
 
-| Mode | Command | Data | For |
+| Environment | Datastore | Auth | Selected when |
 | --- | --- | --- | --- |
-| **Free / no DB** (default) | `npm run build && npm run start` | `./.data/izd-db.json` (file store) | Individuals, small teams, self-hosters |
-| **Docker (with Postgres+Redis)** | `docker compose up --build` | Postgres volume | Teams who want a stack |
-| **Enterprise / own DB** | set `DATABASE_DRIVER=prisma` + `DATABASE_URL` | Your Postgres | Orgs that must control their data |
+| **Production** | Supabase (Postgres) | Supabase Auth (email OTP) | Supabase env vars present |
+| **Local dev / CI** | `./.data/izd-db.json` (file store) | dev magic-link (code returned inline) | Supabase env vars absent |
 
-All three implement the **same `Repository` interface** (`src/server/repository.ts`).
-The default `jsonRepository` needs zero dependencies; the enterprise path uses the
-committed `prisma/schema.prisma` (implement `src/server/prismaRepository.ts` against
-it and flip `DATABASE_DRIVER`). Copy `.env.example` to `.env` to configure
-`AUTH_SECRET`, the driver, and the (optional) email provider.
+**Deploying on Supabase:**
+
+1. Create a Supabase project. From **Settings → API** copy the project URL, the
+   `anon` public key, and the `service_role` secret key.
+2. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and
+   `SUPABASE_SERVICE_ROLE_KEY` in your host's environment (see `.env.example`).
+3. Apply the schema + RLS policies in `supabase/migrations/0001_init.sql` (via the
+   Supabase SQL editor or `supabase db push`).
+4. In **Authentication → URL Configuration**, add your deployed origin and
+   `/auth/callback` as a redirect URL. The default magic-link email works out of the
+   box; to also support pasting a code, enable `{{ .Token }}` in the email template.
+5. `npm run build && npm run start` behind HTTPS.
+
+Data is accessed **server-side** via the service-role key; the browser only uses
+Supabase for auth. RLS is enabled on every table as defense-in-depth (see the
+migration). No self-hosting, Prisma, or Docker is involved.
 
 **What the backend adds** (all gated so guests are never blocked):
 
-- **Magic-link accounts** (`/api/auth/*`) — no passwords, no SSO required. In dev
-  (no mail provider) the login code is returned inline; wire an email sender and set
-  `EMAIL_ENABLED=1` for production.
+- **Email accounts** (`/api/auth/*`) — no passwords. In production Supabase Auth
+  emails a one-time code / magic link; locally (no Supabase) a dev code is returned
+  inline so the flow works with no mail provider. Same two-step UX either way.
 - **Guest-progress adoption + cross-device sync** — on sign-in, local stats are
   pushed up and merged with the server via a monotonic element-wise max, so nothing
   is lost or double-counted.
@@ -308,12 +330,16 @@ it and flip `DATABASE_DRIVER`). Copy `.env.example` to `.env` to configure
   audit log) plus a **printable PDF summary** (`/admin/print`, save-as-PDF from the
   browser). Reports honour the org's leaderboard privacy setting.
 
-**Security model.** Sessions are stateless **HMAC-signed cookies** (`AUTH_SECRET`);
-magic tokens are single-use and time-boxed. Admin routes verify `org_admin`
-membership server-side (a non-admin gets `403`). Round submissions are clamped and
-only accept an `orgId` the caller belongs to. Leaderboard display honours a
-per-org privacy setting (real name / handle / anonymous). Set a strong `AUTH_SECRET`
-and serve over HTTPS in production.
+**Security model.** In production, sessions are **Supabase Auth** (JWT session
+cookies managed by `@supabase/ssr`); the dev fallback uses stateless HMAC-signed
+cookies and single-use, time-boxed magic tokens (the server hard-fails if the dev
+auth runs in production without a strong `AUTH_SECRET`). Every response carries a
+strict **CSP** and the usual security headers (`middleware.ts`). Admin routes verify
+`org_admin` membership server-side (a non-admin gets `403`). Round submissions are
+clamped and only accept an `orgId` the caller belongs to. Postgres tables have
+**RLS** enabled (defense-in-depth); paid features are gated in `src/server/plan.ts`.
+Leaderboard display honours a per-org privacy setting (real name / handle /
+anonymous).
 
 ## Using real phishing emails safely
 
@@ -405,7 +431,7 @@ In production this content moves into the database (`orgId | null`, `version`,
   `orgId` (`null` = the open global pool). Global play and global leaderboards are
   always available; org grouping is an overlay, not a wall.
 - **Guest-first identity.** A player is a handle + an anonymous id in
-  `localStorage` (`src/game/storage.ts`). Optional accounts (magic-link / OAuth) are
+  `localStorage` (`src/game/storage.ts`). Optional email accounts (Supabase Auth) are
   meant only to persist and sync that same shape across devices — never a gate.
 - **Offline-first client + additive sync overlay.** Local play stays authoritative
   through `src/game/store.ts` (`GameStore`/`localStore`) — no network on the critical
@@ -414,9 +440,10 @@ In production this content moves into the database (`orgId | null`, `version`,
   to `/api/rounds`. Every online surface fails soft, so removing the backend just
   hides those features.
 - **Server `Repository` seam (the one thing the datastore swaps).** All server
-  persistence goes through `src/server/repository.ts`. The default `jsonRepository`
-  is file-backed and free; enterprises implement the same interface over
-  Prisma/Postgres and flip `DATABASE_DRIVER` — no API or UI changes.
+  persistence goes through `src/server/repository.ts`. Production uses
+  `supabaseRepository` (Postgres); local dev / CI use the file-backed
+  `jsonRepository`. The driver is chosen automatically from the environment
+  (`src/server/config.ts`) — no API or UI changes.
 - **One duel engine, two transports.** A duel is fully described by a compact
   **challenge code** (`v1-<seed>-<size>-<diff>`); `buildDuelDeck`, `simulateBot`, and
   the scoring functions are pure and deterministic. The offline bot duel and the
@@ -433,10 +460,11 @@ In production this content moves into the database (`orgId | null`, `version`,
 - The UI **repeatedly frames this as a training simulation** — all emails fictional
   and AI-generated, brand names for realism only. In an org deployment this policy
   banner is configurable, and scores are for learning, not punitive HR action.
-- Guest data lives only in the player's browser; nothing is transmitted in this
-  build. A production deployment should encrypt in transit and at rest, enforce
-  strict tenant isolation, audit all admin actions, and support per-user export /
-  delete (GDPR) and configurable retention — see the roadmap.
+- Guest data lives only in the player's browser; signing in syncs stats to
+  Supabase (Postgres), which encrypts data in transit and at rest and provides
+  managed backups. Admin actions are audited; RLS enforces tenant isolation as
+  defense-in-depth. Per-user export / delete (GDPR) and configurable retention are
+  on the roadmap.
 
 ## License
 

@@ -1,7 +1,7 @@
 /**
- * Server-side domain types. Framework-free so the same shapes back the default
- * file store (self-hosted, free, zero-dependency) and a Prisma/Postgres
- * implementation for enterprises who want to control their own database.
+ * Server-side domain types. Framework-free so the same shapes back both drivers:
+ * the Supabase/Postgres store (production) and the zero-dependency file store
+ * (local dev / CI).
  */
 
 import type { GameEmail, RedFlagType } from "@/game/types";
@@ -25,12 +25,17 @@ export type MagicToken = {
   usedAt: string | null;
 };
 
+/** Billing tier. `free` is the default for self-serve orgs; `enterprise` unlocks
+ * the paid customization/options and is set out-of-band (sales/billing). */
+export type OrgPlan = "free" | "team" | "enterprise";
+
 export type Org = {
   id: string;
   name: string;
   joinCode: string;
   createdAt: string;
   settings: OrgSettings;
+  plan: OrgPlan;
 };
 
 export type OrgSettings = {

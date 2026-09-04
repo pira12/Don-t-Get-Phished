@@ -1,13 +1,11 @@
 /** @type {import('next').NextConfig} */
 
-// Phase 2 runs as a Node server so the optional backend (auth, leaderboards, orgs,
-// admin) is available via /api routes. The free, self-hosted default needs no
-// database and no external services — the file-backed store (src/server/jsonRepository.ts)
-// keeps everything in ./.data. The game itself stays fully offline-first: if the
+// Runs as a Node server so the backend (auth, leaderboards, orgs, admin) is
+// available via /api routes. In production the backend is Supabase (Postgres +
+// Auth + email); for local dev / CI, with no Supabase env vars, it falls back to a
+// zero-dependency file-backed store (src/server/jsonRepository.ts) so the app runs
+// with no external services. The game itself stays fully offline-first: if the
 // backend is ever unreachable, the UI degrades to guest-only solo play + duels.
-//
-// (The Phase 1 frontend-only static export lives at the `phase-1` git history;
-// it can't co-exist with server route handlers.)
 const nextConfig = {
   reactStrictMode: true,
   images: { unoptimized: true },

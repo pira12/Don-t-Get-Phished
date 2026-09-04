@@ -32,6 +32,7 @@ export async function POST(req: Request) {
     joinCode,
     createdAt: new Date().toISOString(),
     settings: { leaderboardDisplay: "handle", competitiveEnabled: true },
+    plan: "free",
   };
   await db.createOrg(org);
 

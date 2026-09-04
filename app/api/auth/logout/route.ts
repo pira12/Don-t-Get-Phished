@@ -1,10 +1,10 @@
 import { json } from "@/server/http";
-import { clearSessionCookie } from "@/server/auth";
+import { endSession } from "@/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST() {
-  clearSessionCookie();
+  await endSession();
   return json({ ok: true });
 }

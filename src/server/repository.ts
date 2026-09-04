@@ -1,10 +1,10 @@
 /**
  * The Repository interface — the single seam between the app and its datastore.
  *
- * The default implementation (jsonRepository) is file-backed with zero external
- * dependencies, so the whole backend self-hosts for free on any Node host.
- * Enterprises who want to own their data point DATABASE_DRIVER at a Prisma/Postgres
- * implementation of this same interface (see prisma/schema.prisma + docker-compose).
+ * Production uses supabaseRepository (Postgres). Local dev / CI use jsonRepository,
+ * a file-backed store with zero external dependencies, so the app runs with no
+ * services. Nothing else in the app talks to a database directly — swapping drivers
+ * (src/server/db.ts) changes nothing downstream.
  */
 
 import type {

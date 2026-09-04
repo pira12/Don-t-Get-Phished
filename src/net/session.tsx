@@ -19,7 +19,7 @@ type SessionValue = {
   setActiveOrgId: (id: string | null) => void;
   refresh: () => Promise<void>;
   requestLink: (email: string) => Promise<{ devToken?: string; emailSent: boolean }>;
-  verify: (token: string, handle?: string) => Promise<void>;
+  verify: (token: string, handle?: string, email?: string) => Promise<void>;
   logout: () => Promise<void>;
   submitRound: (r: RoundSubmission) => void;
 };
@@ -100,8 +100,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return { devToken: r.devToken, emailSent: r.emailSent };
   }, []);
 
-  const verify = useCallback(async (token: string, handle?: string) => {
-    const { user: u } = await api.verify(token, handle);
+  const verify = useCallback(async (token: string, handle?: string, email?: string) => {
+    const { user: u } = await api.verify(token, handle, email);
     setUser(u);
     setStatus("authed");
     // Adopt guest progress: push local up, pull server down, both max-merged.

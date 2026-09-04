@@ -8,6 +8,7 @@ const org: Org = {
   joinCode: "PHISH-ABC",
   createdAt: "2026-09-01T00:00:00Z",
   settings: { leaderboardDisplay: "handle", competitiveEnabled: true },
+  plan: "free",
 };
 
 describe("toCsv", () => {

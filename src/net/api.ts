@@ -1,9 +1,8 @@
 "use client";
 
 /**
- * Thin client for the optional backend. The game is offline-first: if the backend
- * isn't reachable (e.g. the static-export build, or a self-host that only runs the
- * frontend), every call fails soft and the online UI hides itself. Nothing here is
+ * Thin client for the backend. The game is offline-first: if the backend isn't
+ * reachable, every call fails soft and the online UI hides itself. Nothing here is
  * on the critical path for playing.
  */
 
@@ -29,8 +28,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
-  verify: (token: string, handle?: string) =>
-    call<{ user: ApiUser }>("/auth/verify", { method: "POST", body: JSON.stringify({ token, handle }) }),
+  verify: (token: string, handle?: string, email?: string) =>
+    call<{ user: ApiUser }>("/auth/verify", { method: "POST", body: JSON.stringify({ token, handle, email }) }),
   logout: () => call<{ ok: boolean }>("/auth/logout", { method: "POST" }),
 
   getStats: () => call<{ stats: Record<string, unknown> }>("/sync"),

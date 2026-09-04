@@ -50,7 +50,7 @@ export function AccountMenu({ handle }: { handle: string }) {
         setToken(r.devToken);
         setMsg("Dev mode: your login code is filled in below. Click Verify.");
       } else {
-        setMsg("Check your email for a sign-in link.");
+        setMsg("Check your email — click the link, or paste the code below.");
       }
     } catch (e) {
       setMsg((e as Error).message);
@@ -63,7 +63,7 @@ export function AccountMenu({ handle }: { handle: string }) {
     setBusy(true);
     setMsg("");
     try {
-      await session.verify(token.trim(), handle);
+      await session.verify(token.trim(), handle, email.trim());
       setOpen(false);
       setPhase("email");
     } catch (e) {

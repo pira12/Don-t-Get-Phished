@@ -1,8 +1,8 @@
 /**
- * Default datastore: a single JSON file on disk. Zero external services, so the
- * backend self-hosts for free anywhere Node runs. A tiny write queue serialises
- * mutations; reads are served from an in-memory cache. Good for a single node and
- * modest teams; enterprises swap in the Prisma/Postgres repository for scale.
+ * Local dev / CI datastore: a single JSON file on disk. Zero external services, so
+ * the app runs anywhere Node runs with no setup. A tiny write queue serialises
+ * mutations; reads are served from an in-memory cache. Production uses the Supabase
+ * (Postgres) repository instead — selected automatically in src/server/db.ts.
  */
 
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
@@ -151,7 +151,7 @@ class JsonRepository implements Repository {
   async addRoundEvent(e: RoundEvent) {
     await this.mutate((db) => {
       db.events.push(e);
-      // keep the file bounded on a self-hosted single node
+      // keep the dev file bounded on a single node
       if (db.events.length > 20000) db.events = db.events.slice(-20000);
     });
   }
