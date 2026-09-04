@@ -1,28 +1,28 @@
 /**
- * Datastore selection. Defaults to the free, self-hosted, file-backed repository.
- * Set DATABASE_DRIVER=prisma (with DATABASE_URL) to use a Prisma/Postgres
- * implementation — the enterprise, self-controlled path. The rest of the app only
- * ever talks to the Repository interface, so nothing else changes.
+ * Datastore selection. Production uses Supabase (Postgres); local dev / CI use the
+ * zero-config file store. Everything else in the app only ever talks to the
+ * Repository interface, so switching drivers changes nothing downstream.
  */
 
 import type { Repository } from "./repository";
 import { jsonRepository } from "./jsonRepository";
+import { databaseDriver } from "./config";
 
 let repo: Repository = jsonRepository;
+let resolved: "supabase" | "json" = "json";
 
-if (process.env.DATABASE_DRIVER === "prisma") {
-  // Lazy, optional: only loaded when explicitly enabled so the default build has
-  // zero Prisma/Postgres dependency. See prisma/schema.prisma and
-  // src/server/prismaRepository.ts (implement to enable).
+if (databaseDriver === "supabase") {
+  // Lazy, optional: only loaded when Supabase is configured, so the default build
+  // has no hard dependency on a live project.
   try {
 
-    const mod = require("./prismaRepository") as { prismaRepository: Repository };
-    repo = mod.prismaRepository;
-  } catch {
-    console.warn(
-      "[izd] DATABASE_DRIVER=prisma but prismaRepository is not available; falling back to the file store.",
-    );
+    const mod = require("./supabaseRepository") as { supabaseRepository: Repository };
+    repo = mod.supabaseRepository;
+    resolved = "supabase";
+  } catch (e) {
+    console.warn("[dgp] DATABASE_DRIVER=supabase but supabaseRepository is unavailable; using the file store.", e);
   }
 }
 
 export const db: Repository = repo;
+export const activeDriver = resolved;

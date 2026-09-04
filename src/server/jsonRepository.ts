@@ -5,7 +5,7 @@
  * modest teams; enterprises swap in the Prisma/Postgres repository for scale.
  */
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Repository } from "./repository";
 import type {
@@ -71,7 +71,11 @@ class JsonRepository implements Repository {
       const db = await this.load();
       const result = fn(db);
       await mkdir(dirname(DATA_FILE), { recursive: true });
-      await writeFile(DATA_FILE, JSON.stringify(db, null, 2), "utf8");
+      // Atomic write: write to a temp file then rename, so a crash mid-write can
+      // never corrupt the live DB (rename is atomic on the same filesystem).
+      const tmp = `${DATA_FILE}.${process.pid}.${Date.now()}.tmp`;
+      await writeFile(tmp, JSON.stringify(db, null, 2), "utf8");
+      await rename(tmp, DATA_FILE);
       return result;
     };
     const p = this.writeChain.then(run, run);
@@ -111,6 +115,11 @@ class JsonRepository implements Repository {
 
   async createToken(t: MagicToken) {
     await this.mutate((db) => {
+      // Opportunistically prune used or expired tokens so they don't accumulate.
+      const now = Date.now();
+      for (const [key, tok] of Object.entries(db.tokens)) {
+        if (tok.usedAt || new Date(tok.expiresAt).getTime() < now) delete db.tokens[key];
+      }
       db.tokens[t.token] = t;
     });
   }

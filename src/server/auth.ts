@@ -8,14 +8,27 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { db } from "./db";
 import { newToken } from "./ids";
+import { isProd } from "./config";
 import type { MagicToken, User } from "./types";
 
 const COOKIE = "izd_session";
 const SESSION_TTL_DAYS = 30;
 const TOKEN_TTL_MINUTES = 30;
+const DEV_SECRET = "izd-dev-secret-change-me";
 
 function secret(): string {
-  return process.env.AUTH_SECRET || "izd-dev-secret-change-me";
+  const s = process.env.AUTH_SECRET;
+  // The dev magic-link cookie must never be signed with the shared default in a
+  // real deployment — that would let anyone forge a session. Supabase-backed
+  // production doesn't use this codepath at all (Supabase issues its own JWTs);
+  // this only guards the fallback dev auth if it is ever run in production.
+  if (isProd && (!s || s === DEV_SECRET)) {
+    throw new Error(
+      "AUTH_SECRET must be set to a strong, unique value in production. " +
+        "Configure Supabase (recommended) or set AUTH_SECRET before starting the server.",
+    );
+  }
+  return s || DEV_SECRET;
 }
 
 function sign(payload: string): string {
