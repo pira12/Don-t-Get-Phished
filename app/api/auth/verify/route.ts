@@ -1,5 +1,6 @@
-import { badRequest, json } from "@/server/http";
+import { badRequest, json, tooManyRequests } from "@/server/http";
 import { verifySignIn } from "@/server/auth";
+import { clientIp, rateLimit } from "@/server/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +15,10 @@ export async function POST(req: Request) {
   } catch {
     return badRequest("Invalid JSON");
   }
+  // Throttle code-guessing per IP.
+  const guard = rateLimit(`auth:verify:ip:${clientIp(req)}`, 20, 60_000);
+  if (!guard.ok) return tooManyRequests(guard.retryAfterSec);
+
   const token = (body.token || "").trim();
   if (!token) return badRequest("Missing code");
   const email = (body.email || "").trim().toLowerCase() || undefined;

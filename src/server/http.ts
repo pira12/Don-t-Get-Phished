@@ -17,6 +17,9 @@ export function forbidden() {
 export function notFound() {
   return json({ error: "Not found" }, 404);
 }
+export function tooManyRequests(retryAfterSec: number, message = "Too many requests. Please slow down.") {
+  return NextResponse.json({ error: message }, { status: 429, headers: { "Retry-After": String(retryAfterSec) } });
+}
 
 /** Element-wise max merge of technique maps (monotonic, never double-counts). */
 export function maxMergeCounts(a: TechniqueCounts, b: TechniqueCounts): TechniqueCounts {

@@ -1,5 +1,6 @@
-import { badRequest, json } from "@/server/http";
+import { badRequest, json, tooManyRequests } from "@/server/http";
 import { requestSignIn } from "@/server/auth";
+import { clientIp, rateLimit } from "@/server/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,14 @@ export async function POST(req: Request) {
   }
   const email = (body.email || "").trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return badRequest("Enter a valid email");
+
+  // Sending sign-in emails is abuse-prone (spam / enumeration): cap per IP and
+  // per target address.
+  const ip = clientIp(req);
+  const byIp = rateLimit(`auth:req:ip:${ip}`, 10, 60_000);
+  if (!byIp.ok) return tooManyRequests(byIp.retryAfterSec);
+  const byEmail = rateLimit(`auth:req:email:${email}`, 5, 15 * 60_000);
+  if (!byEmail.ok) return tooManyRequests(byEmail.retryAfterSec);
 
   const origin = new URL(req.url).origin;
   try {
