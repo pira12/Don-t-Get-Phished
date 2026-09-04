@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { LogOut, BarChart3, Shield, ChevronDown, Building2, Cloud, CloudOff } from "lucide-react";
+import { LogOut, BarChart3, Shield, ChevronDown, Building2, Cloud, CloudOff, GraduationCap } from "lucide-react";
 import { useSession } from "@/net/session";
 import { Avatar } from "./Avatar";
 
@@ -188,6 +188,10 @@ export function AccountMenu({ handle }: { handle: string }) {
               backend is enabled.
             </p>
           )}
+
+          <div className="mt-2 border-t border-border pt-2">
+            <MenuLink href="/learn" icon={<GraduationCap size={15} />} label="Learn & tools" onClick={() => setOpen(false)} />
+          </div>
         </div>
       )}
     </div>

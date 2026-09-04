@@ -2,7 +2,7 @@ import type { GameEmail } from "@/game/types";
 
 /**
  * ============================================================================
- * Seed email dataset — Inbox Zero-Day
+ * Seed email dataset — Don't Get Phished
  * ============================================================================
  *
  * All emails are FICTIONAL and written for security-awareness training only.

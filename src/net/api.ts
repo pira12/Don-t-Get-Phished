@@ -55,6 +55,8 @@ export const api = {
   updateContent: (id: string, patch: unknown) =>
     call<{ email: ServerEmailDto }>(`/admin/content/${id}`, { method: "PUT", body: JSON.stringify(patch) }),
   deleteContent: (id: string) => call<{ ok: boolean }>(`/admin/content/${id}`, { method: "DELETE" }),
+  importContent: (orgId: string, raw: string) =>
+    call<{ draft: ImportedDraft }>("/admin/content/import", { method: "POST", body: JSON.stringify({ orgId, raw }) }),
   memberContent: (orgId: string) => call<{ emails: ServerEmailDto[] }>(`/content?orgId=${orgId}`),
 
   // assignments
@@ -134,6 +136,22 @@ export type ServerEmailDto = {
   legitSignals?: string[];
   techniqueTags?: string[];
   updatedAt: string;
+};
+
+export type ImportedDraft = {
+  truth: "phishing" | "legit";
+  difficulty: "easy" | "medium" | "hard";
+  from: { name: string; address: string };
+  replyTo?: string;
+  to: string;
+  subject: string;
+  snippet?: string;
+  bodyHtml: string;
+  links: { text: string; href: string }[];
+  auth: { spf: string; dkim: string; dmarc: string };
+  firstTimeSender?: boolean;
+  mailedBy?: string;
+  redFlags: { type: string; anchor: string; explanation: string }[];
 };
 
 export type AdminAssignment = {

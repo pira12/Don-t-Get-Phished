@@ -212,6 +212,13 @@ export function InboxLayout() {
         >
           <Swords size={13} /> Duel
         </Link>
+        <Link
+          href="/learn"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-semibold text-ink-muted transition hover:bg-[var(--row-hover)]"
+          title="Learn to spot phishing + real tools"
+        >
+          <GraduationCap size={13} /> Learn
+        </Link>
 
         <div className="mx-1 hidden h-4 w-px bg-border sm:block" />
 

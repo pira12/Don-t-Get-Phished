@@ -1,4 +1,4 @@
-# Inbox Zero-Day
+# Don't Get Phished
 
 A phishing-detection training game that looks and feels like a **real modern email
 client**. Players read emails in a familiar inbox, investigate each one with
@@ -63,8 +63,8 @@ Other scripts:
 
 ```bash
 npm run lint           # eslint (next/core-web-vitals)
-npm run test           # 56 unit tests (game logic incl. Elo + server:
-                       #   leaderboard, assignments, content, reports) (vitest)
+npm run test           # 61 unit tests (game logic incl. Elo + server:
+                       #   leaderboard, assignments, content, reports, import) (vitest)
 ```
 
 Requires Node 18.18+ (developed on Node 22). For the enterprise Postgres path and
@@ -80,7 +80,7 @@ is complete and runnable:
 - **Pixel-realistic mail client** with a **Gmail** theme (default) and a switchable
   **Outlook** theme, plus **light/dark** mode. Themes swap live via a CSS-variable
   design-token layer — no reload, no lost game state. Generic product name
-  ("Sentinel Mail") and a neutral shield mark; no trademarked logos.
+  ("Don't Get Phished") and a neutral shield mark; no trademarked logos.
 - **Three-pane inbox** (folder rail · email list · reading view) that collapses to
   list → reading view on mobile.
 - **Forensic tools**, each mirroring something a real client does so the skill
@@ -184,6 +184,7 @@ src/
     leaderboard.ts         PURE ranking / timeframe / weakness-heatmap (tested)
     assignments.ts         PURE assignment-completion logic (tested)
     content.ts             PURE email validation + HTML sanitisation (tested)
+    importEmail.ts         PURE defang + parse for safe real-email import (tested)
     reports.ts             PURE CSV serialisation + report builders (tested)
     duelHub.ts             in-memory live-match manager (matchmaking, scoring)
     duelFinalize.ts        one-time Elo application on match finish
@@ -198,6 +199,7 @@ src/
   hooks/useDuel.ts         offline bot-duel state (deck, bot, live score, rating)
   hooks/useOnlineDuel.ts   online duel: matchmaking + live race via the API
   lib/                     format helpers + DOM highlight for evidence chips
+  components/LearnView.tsx real anti-phishing tools + the spot-the-phish checklist
   components/online/       LeaderboardView, OrgsView, AdminView, ContentAdmin,
                            AssignmentsAdmin, ReportsAdmin, PrintReport, PageShell
   components/              InboxLayout, FolderRail, EmailList, ReadingPane,
@@ -265,7 +267,9 @@ it and flip `DATABASE_DRIVER`). Copy `.env.example` to `.env` to configure
   Bodies are **sanitised server-side** (scripts/handlers/`javascript:` stripped)
   because published content renders for every member. Published emails are served to
   members (`/api/content`) and folded into their practice rounds (never the daily
-  challenge, which stays globally deterministic).
+  challenge, which stays globally deterministic). Admins can also **import a real
+  email** (`/api/admin/content/import`) through a defang pipeline — see
+  [Using real phishing emails safely](#using-real-phishing-emails-safely).
 - **Assignments** (`/api/admin/assignments*` + `/api/assignments`) — assign a
   difficulty / technique focus / accuracy target / due date to the whole org or a
   team; completion is computed from members' round events and shown to admins
@@ -289,6 +293,42 @@ membership server-side (a non-admin gets `403`). Round submissions are clamped a
 only accept an `orgId` the caller belongs to. Leaderboard display honours a
 per-org privacy setting (real name / handle / anonymous). Set a strong `AUTH_SECRET`
 and serve over HTTPS in production.
+
+## Using real phishing emails safely
+
+Real phishing samples make powerful training — but real emails carry **live
+malicious URLs, tracking beacons, malware attachments, victims' personal data, and
+trademarked brands**, so they must never be rendered as-is. This project takes the
+safe path: it does **not** bundle real datasets or auto-scrape live feeds. Instead an
+org admin can **import** a sample through a defang pipeline (Admin → Custom content →
+**Import real email**), which:
+
+- runs the same server-side sanitiser (removes `<script>`, inline handlers,
+  `javascript:` URIs),
+- **defangs remote resources** — images/beacons/media are blocked so opening the
+  message can't phone home,
+- **keeps link text + destinations** (that mismatch is the lesson) — the reading pane
+  never navigates, so those hrefs stay inert,
+- **drops the real recipient** and lightly **redacts** long digit runs (card/SSN-like),
+- produces an **unpublished draft** a human reviews, tags with red flags, and
+  publishes — never auto-live.
+
+Suitable **free sources** to draw samples from (verify each one's licence yourself,
+and strip/booby-trap-check before publishing):
+
+| Source | Contents | Notes |
+| --- | --- | --- |
+| Apache **SpamAssassin** public corpus | ham + spam | Public, widely used for research |
+| **Nazario** Phishing Corpus | phishing emails | Research use; check terms |
+| **PhishTank** / **OpenPhish** (community feeds) | phishing **URLs** | Great for the link lessons; respect API terms |
+| **Enron** email dataset | legitimate mail | Good *legit* examples to balance the deck |
+| Kaggle "phishing email" datasets | labelled emails | Licence varies per dataset — read it |
+
+**Your responsibilities when importing:** confirm you're licensed to use the sample;
+remove or genericise **trademarked brand names** if you deploy publicly; ensure no
+**personal data** survives (the pipeline helps but is not a legal guarantee); and keep
+a human in the loop. The built-in seed set stays fully fictional so the repo ships
+clean.
 
 ## Adding new emails
 

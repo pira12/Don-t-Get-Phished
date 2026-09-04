@@ -42,7 +42,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
       <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-popover">
         <div className="mb-4 flex items-center justify-between">
           <span className="text-xs font-semibold uppercase tracking-wide text-ink-faint">
-            Welcome to Inbox Zero-Day
+            Welcome to Don&apos;t Get Phished
           </span>
           <button onClick={finish} className="text-xs text-ink-muted underline hover:text-ink">
             Skip intro

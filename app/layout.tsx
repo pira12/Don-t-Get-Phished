@@ -4,9 +4,9 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { SessionProvider } from "@/net/session";
 
 export const metadata: Metadata = {
-  title: "Inbox Zero-Day — spot the phishing email",
+  title: "Don't Get Phished — spot the phishing email",
   description:
-    "A phishing-detection training game that looks like a real email client. Investigate emails with authentic inbox tools and classify each as phishing or legitimate.",
+    "Don't Get Phished is a training game that looks like a real inbox. Investigate emails with authentic tools and classify each as phishing or legitimate — and learn the real signals that keep you safe.",
 };
 
 export const viewport: Viewport = {

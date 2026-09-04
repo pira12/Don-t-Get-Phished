@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ShieldCheck, Menu, BarChart3, Keyboard, Trophy } from "lucide-react";
+import { Search, ShieldCheck, Menu, BarChart3, Keyboard, Trophy, GraduationCap } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { AccountMenu } from "./AccountMenu";
 
 /**
- * A neutral, generic mail-client top bar. No trademarked wordmark — a generic
- * product name ("Sentinel Mail") and a shield mark.
+ * The product top bar. Branded "Don't Get Phished" with a shield mark; the inbox
+ * *content* below stays a realistic Gmail/Outlook client. No trademarked wordmarks.
  */
 export function TopBar({
   handle,
@@ -25,7 +25,9 @@ export function TopBar({
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-[color:var(--accent-ink)]">
           <ShieldCheck size={18} aria-hidden />
         </span>
-        <span className="hidden text-lg font-medium text-ink sm:block">Sentinel Mail</span>
+        <span className="hidden text-lg font-semibold text-ink sm:block">
+          Don&apos;t Get Phished
+        </span>
       </div>
 
       <div className="flex max-w-2xl flex-1 items-center gap-3 rounded-full bg-surface-2 px-4 py-2.5 text-ink-muted">
@@ -63,6 +65,14 @@ export function TopBar({
           className="hidden rounded-full border border-border p-2 text-ink-muted hover:bg-[var(--row-hover)] sm:block"
         >
           <Trophy size={16} />
+        </Link>
+        <Link
+          href="/learn"
+          aria-label="Learn and anti-phishing tools"
+          title="Learn & tools"
+          className="hidden rounded-full border border-border p-2 text-ink-muted hover:bg-[var(--row-hover)] sm:block"
+        >
+          <GraduationCap size={16} />
         </Link>
         <div className="flex items-center gap-2 pl-1">
           <AccountMenu handle={handle} />

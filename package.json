@@ -1,8 +1,8 @@
 {
-  "name": "inbox-zero-day",
+  "name": "dont-get-phished",
   "version": "0.1.0",
   "private": true,
-  "description": "Inbox Zero-Day — a phishing-detection training game that looks like a real email client.",
+  "description": "Don't Get Phished — a phishing-detection training game that looks like a real email client.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

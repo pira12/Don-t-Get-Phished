@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Trash2, Eye, EyeOff, Save, X, FilePenLine } from "lucide-react";
-import { api, type ServerEmailDto } from "@/net/api";
+import { Plus, Trash2, Eye, EyeOff, Save, X, FilePenLine, ShieldCheck, Import } from "lucide-react";
+import { api, type ImportedDraft, type ServerEmailDto } from "@/net/api";
 import { EmailMessage } from "@/components/EmailMessage";
 import { TECHNIQUE_LABELS, type GameEmail, type RedFlagType } from "@/game/types";
 
@@ -97,6 +97,29 @@ function dtoToDraft(e: ServerEmailDto): Draft {
   };
 }
 
+function importedToDraft(d: ImportedDraft): Draft {
+  return {
+    truth: d.truth,
+    difficulty: d.difficulty,
+    fromName: d.from.name,
+    fromAddress: d.from.address,
+    replyTo: d.replyTo ?? "",
+    subject: d.subject,
+    snippet: d.snippet ?? "",
+    bodyHtml: d.bodyHtml,
+    linkText: d.links[0]?.text ?? "",
+    linkHref: d.links[0]?.href ?? "",
+    spf: d.auth.spf,
+    dkim: d.auth.dkim,
+    dmarc: d.auth.dmarc,
+    firstTimeSender: !!d.firstTimeSender,
+    mailedBy: d.mailedBy ?? "",
+    signedBy: "",
+    redFlags: (d.redFlags as Draft["redFlags"]).length ? (d.redFlags as Draft["redFlags"]) : [{ type: "credential_harvest_link", anchor: "", explanation: "" }],
+    legitSignals: [""],
+  };
+}
+
 function draftToPayload(d: Draft) {
   return {
     truth: d.truth,
@@ -121,6 +144,9 @@ export function ContentAdmin({ orgId }: { orgId: string }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [msg, setMsg] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRaw, setImportRaw] = useState("");
+  const [importErr, setImportErr] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -172,18 +198,70 @@ export function ContentAdmin({ orgId }: { orgId: string }) {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-ink-muted">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <p className="max-w-xl text-sm text-ink-muted">
           Author scenario emails that mimic your real vendors and internal senders — the most
           effective training. Published emails appear in members&apos; practice rounds.
         </p>
-        <button
-          onClick={() => setDraft({ ...BLANK })}
-          className="inline-flex shrink-0 items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-[color:var(--accent-ink)] hover:brightness-110"
-        >
-          <Plus size={15} /> New scenario
-        </button>
+        <div className="flex shrink-0 gap-2">
+          <button
+            onClick={() => { setImportOpen((o) => !o); setImportErr(""); }}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-2 px-4 py-2 text-sm font-semibold text-ink hover:brightness-95"
+          >
+            <Import size={15} /> Import real email
+          </button>
+          <button
+            onClick={() => setDraft({ ...BLANK })}
+            className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-[color:var(--accent-ink)] hover:brightness-110"
+          >
+            <Plus size={15} /> New scenario
+          </button>
+        </div>
       </div>
+
+      {importOpen && (
+        <div className="mb-4 rounded-2xl border border-border bg-surface p-4">
+          <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-ink">
+            <ShieldCheck size={16} className="text-success" /> Import a real email — safely
+          </div>
+          <p className="mb-2 text-xs text-ink-muted">
+            Paste a real (e.g. research-corpus) email — headers and/or body. It&apos;s{" "}
+            <strong>defanged</strong> before you ever see it: scripts and event handlers removed,
+            remote images/beacons blocked, and long digit sequences redacted. The real recipient is
+            replaced. You then review, add the teaching red flags, and publish. Only import content
+            you&apos;re licensed to use, and check for brand names / personal data before publishing.
+          </p>
+          <textarea
+            value={importRaw}
+            onChange={(e) => setImportRaw(e.target.value)}
+            rows={7}
+            placeholder={"From: \"IT Support\" <no-reply@examp1e.com>\nSubject: Password expires today\nAuthentication-Results: spf=fail dkim=fail dmarc=fail\n\n<p>Your password expires today. <a href=\"http://examp1e.com/verify\">Verify now</a></p>"}
+            className="w-full rounded-client border border-border bg-surface-2 p-2 font-mono text-xs text-ink outline-none focus:border-accent"
+          />
+          {importErr && <p className="mt-1 text-xs text-danger">{importErr}</p>}
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={async () => {
+                setImportErr("");
+                try {
+                  const r = await api.importContent(orgId, importRaw);
+                  setImportOpen(false);
+                  setImportRaw("");
+                  setDraft(importedToDraft(r.draft));
+                } catch (e) {
+                  setImportErr((e as Error).message);
+                }
+              }}
+              className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-[color:var(--accent-ink)] hover:brightness-110"
+            >
+              Defang &amp; review
+            </button>
+            <button onClick={() => setImportOpen(false)} className="rounded-full border border-border px-4 py-2 text-sm text-ink hover:bg-[var(--row-hover)]">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
       {msg && <p className="mb-2 text-xs text-success">{msg}</p>}
 
       {emails.length === 0 ? (
